@@ -1,15 +1,45 @@
-import { configureStore } from "@reduxjs/toolkit";
-import { useDispatch } from "react-redux";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "./api/api";
+import themeReducer from "./store/theme-slice";
+
+const persistConfig = {
+  key: "root",
+  storage: AsyncStorage,
+  whitelist: ["theme"],
+};
+
+const rootReducer = combineReducers({
+  [api.reducerPath]: api.reducer,
+  theme: themeReducer,
+});
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
-  reducer: {
-    [api.reducerPath]: api.reducer,
-  },
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(api.middleware),
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }).concat(api.middleware),
 });
+
+export const persistor = persistStore(store);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
+export const useAppSelector = useSelector.withTypes<RootState>();

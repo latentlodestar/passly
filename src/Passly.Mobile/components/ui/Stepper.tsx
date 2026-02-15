@@ -15,71 +15,72 @@ export function Stepper({ steps, currentStep }: StepperProps) {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
 
-  return (
-    <View style={styles.container}>
-      {steps.map((step, index) => {
-        const isCompleted = index < currentStep;
-        const isCurrent = index === currentStep;
+  const items: React.ReactNode[] = [];
+  steps.forEach((step, index) => {
+    const isCompleted = index < currentStep;
+    const isCurrent = index === currentStep;
 
-        return (
-          <View key={index} style={styles.stepGroup}>
-            <View style={styles.step}>
-              <View
-                style={[
-                  styles.indicator,
-                  {
-                    backgroundColor: isCompleted
-                      ? t.primary
-                      : isCurrent
-                        ? t.primaryMuted
-                        : t.surface,
-                    borderColor: isCompleted || isCurrent ? t.primary : t.border,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.indicatorText,
-                    {
-                      color: isCompleted
-                        ? t.primaryFg
-                        : isCurrent
-                          ? t.primary
-                          : t.muted,
-                    },
-                  ]}
-                >
-                  {isCompleted ? '\u2713' : `${index + 1}`}
-                </Text>
-              </View>
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: isCompleted || isCurrent ? t.fg : t.muted,
-                    fontWeight: isCurrent ? fontWeight.semibold : fontWeight.medium,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {step.label}
-              </Text>
-            </View>
-            {index < steps.length - 1 && (
-              <View
-                style={[
-                  styles.connector,
-                  {
-                    backgroundColor: isCompleted ? t.primary : t.border,
-                  },
-                ]}
-              />
-            )}
-          </View>
-        );
-      })}
-    </View>
-  );
+    items.push(
+      <View key={`step-${index}`} style={styles.step}>
+        <View
+          style={[
+            styles.indicator,
+            {
+              backgroundColor: isCompleted
+                ? t.primary
+                : isCurrent
+                  ? t.primaryMuted
+                  : t.surface,
+              borderColor: isCompleted || isCurrent ? t.primary : t.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.indicatorText,
+              {
+                color: isCompleted
+                  ? t.primaryFg
+                  : isCurrent
+                    ? t.primary
+                    : t.muted,
+              },
+            ]}
+          >
+            {isCompleted ? '\u2713' : `${index + 1}`}
+          </Text>
+        </View>
+        <Text
+          style={[
+            styles.label,
+            {
+              color: isCompleted || isCurrent ? t.fg : t.muted,
+              fontWeight: isCurrent ? fontWeight.semibold : fontWeight.medium,
+            },
+          ]}
+          numberOfLines={1}
+        >
+          {step.label}
+        </Text>
+      </View>,
+    );
+
+    if (index < steps.length - 1) {
+      items.push(
+        <View
+          key={`connector-${index}`}
+          style={[
+            styles.connector,
+            {
+              backgroundColor: isCompleted ? t.primary : t.border,
+            },
+          ]}
+        />,
+      );
+    }
+  });
+
+  return <View style={styles.container}>{items}</View>;
 }
 
 interface ProgressBarProps {
@@ -123,11 +124,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  stepGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+    justifyContent: 'center',
   },
   step: {
     alignItems: 'center',

@@ -575,7 +575,6 @@
   font-size: 0.875rem;
   line-height: 1;
   transition: background 150ms, border-color 150ms;
-  margin-left: auto;
 }
 
 .theme-toggle:hover {

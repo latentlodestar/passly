@@ -1,12 +1,13 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
+import { colors, spacing, fontSize, fontWeight } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { Stepper, ProgressBar } from '@/components/ui/Stepper';
+import { SettingsFab } from '@/components/ui/AppHeader';
 
 const processSteps = [
   { label: 'Get started' },
@@ -204,6 +205,7 @@ export default function ChecklistScreen() {
           </View>
         </Card>
       </ScrollView>
+      <SettingsFab />
     </SafeAreaView>
   );
 }

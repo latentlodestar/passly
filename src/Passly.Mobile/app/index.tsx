@@ -2,37 +2,16 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
-import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
+import { colors, spacing, fontSize, fontWeight } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Button } from '@/components/ui/Button';
-import { Card, CardBody } from '@/components/ui/Card';
 import { Stepper } from '@/components/ui/Stepper';
+import { SettingsFab } from '@/components/ui/AppHeader';
 
 const processSteps = [
   { label: 'Get started' },
   { label: 'Import evidence' },
   { label: 'Review' },
-];
-
-const features = [
-  {
-    icon: '\u{1F4CB}',
-    title: 'Guided preparation',
-    description:
-      'Step-by-step guidance through every section of your petition.',
-  },
-  {
-    icon: '\u{1F50D}',
-    title: 'Evidence analysis',
-    description:
-      'Import your communication history and surface the signals that matter.',
-  },
-  {
-    icon: '\u2705',
-    title: 'Gap identification',
-    description:
-      'See exactly what documentation is missing before you submit.',
-  },
 ];
 
 export default function HomeScreen() {
@@ -63,33 +42,18 @@ export default function HomeScreen() {
             <Button
               label="Begin preparation"
               size="lg"
-              onPress={() => router.push('/(tabs)/evidence')}
+              onPress={() => router.push('/evidence')}
             />
             <Button
               label="View checklist"
               variant="secondary"
               size="lg"
-              onPress={() => router.push('/(tabs)/checklist')}
+              onPress={() => router.push('/checklist')}
             />
           </View>
         </View>
-
-        <View style={styles.features}>
-          {features.map((f) => (
-            <Card key={f.title}>
-              <CardBody>
-                <Text style={styles.featureIcon}>{f.icon}</Text>
-                <Text style={[styles.featureTitle, { color: t.fg }]}>
-                  {f.title}
-                </Text>
-                <Text style={[styles.featureDesc, { color: t.fg2 }]}>
-                  {f.description}
-                </Text>
-              </CardBody>
-            </Card>
-          ))}
-        </View>
       </ScrollView>
+      <SettingsFab />
     </SafeAreaView>
   );
 }
@@ -126,21 +90,5 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     width: '100%',
     marginTop: spacing.sm,
-  },
-  features: {
-    gap: spacing.md,
-  },
-  featureIcon: {
-    fontSize: 24,
-    marginBottom: spacing.sm,
-  },
-  featureTitle: {
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    marginBottom: spacing.xs,
-  },
-  featureDesc: {
-    fontSize: fontSize.sm,
-    lineHeight: 20,
   },
 });

@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 
 import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
@@ -9,6 +10,7 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { Stepper, ProgressBar } from '@/components/ui/Stepper';
+import { SettingsFab } from '@/components/ui/AppHeader';
 
 const processSteps = [
   { label: 'Get started' },
@@ -26,6 +28,7 @@ interface UploadedFile {
 export default function EvidenceScreen() {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
+  const router = useRouter();
 
   const [files] = useState<UploadedFile[]>([
     {
@@ -133,10 +136,12 @@ export default function EvidenceScreen() {
             <Button
               label="Continue to review"
               disabled={doneCount < files.length}
+              onPress={() => router.push('/checklist')}
             />
           </View>
         )}
       </ScrollView>
+      <SettingsFab />
     </SafeAreaView>
   );
 }
