@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: passly
+      POSTGRES_PASSWORD: passly_dev
+      POSTGRES_DB: passlydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U passly -d passlydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Passly.Api/Dockerfile
+    ports:
+      - "5192:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__passlydb: "Host=postgres;Port=5432;Database=passlydb;Username=passly;Password=passly_dev"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

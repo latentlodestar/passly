@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>Passly.Api</RootNamespace>
+    <UserSecretsId>038884bc-a996-4264-957a-470080d3e997</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Passly.Core\Passly.Core.csproj" />
+    <ProjectReference Include="..\Passly.Persistence\Passly.Persistence.csproj" />
+    <ProjectReference Include="..\Passly.Infrastructure\Passly.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
