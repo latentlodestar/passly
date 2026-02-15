@@ -5,7 +5,7 @@ import type {
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: "" }),
-  tagTypes: ["Catalog", "Runs"],
+  tagTypes: [],
   endpoints: (builder) => ({
     getStatus: builder.query<ApiStatusResponse, void>({
       query: () => "/api/status",

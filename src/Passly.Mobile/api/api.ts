@@ -7,7 +7,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:5192";
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: API_BASE_URL }),
-  tagTypes: ["Catalog", "Runs"],
+  tagTypes: [],
   endpoints: (builder) => ({
     getStatus: builder.query<ApiStatusResponse, void>({
       query: () => "/api/status",
