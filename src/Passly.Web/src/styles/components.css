@@ -26,28 +26,24 @@
   white-space: nowrap;
 }
 
-.topbar__nav {
-  @apply flex items-center gap-1;
+.topbar__stepper {
+  flex: 1;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
-.topbar__link {
-  @apply inline-flex items-center px-2.5 py-1 text-sm rounded-md;
-  color: var(--fg-2);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: color 150ms, background 150ms;
+.topbar__stepper .stepper__indicator {
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.75rem;
 }
 
-.topbar__link:hover {
-  color: var(--fg);
-  background: var(--surface-2);
+.topbar__stepper .stepper__label {
+  font-size: 0.75rem;
 }
 
-.topbar__link--active {
-  color: var(--fg);
-  background: var(--surface-2);
-  font-weight: 500;
+.topbar__stepper .stepper__connector {
+  min-width: 1.5rem;
 }
 
 .main-content {
@@ -160,7 +156,8 @@
    ---------------------------------------------------------------- */
 
 .input,
-.select {
+.select,
+.textarea {
   @apply text-sm rounded-md;
   padding: 0.375rem 0.625rem;
   background: var(--surface);
@@ -170,15 +167,53 @@
   transition: border-color 150ms, box-shadow 150ms;
 }
 
-.input::placeholder {
+.input::placeholder,
+.textarea::placeholder {
   color: var(--muted);
 }
 
 .input:focus,
-.select:focus {
+.select:focus,
+.textarea:focus {
   outline: none;
   border-color: var(--focus);
   box-shadow: 0 0 0 3px var(--ring);
+}
+
+.input--error,
+.textarea--error {
+  border-color: var(--danger);
+}
+
+.input--error:focus,
+.textarea--error:focus {
+  box-shadow: 0 0 0 3px rgba(229, 83, 75, 0.2);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 5rem;
+}
+
+.form-field {
+  @apply flex flex-col;
+  gap: var(--space-1);
+}
+
+.form-label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.form-helper {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.form-error {
+  font-size: var(--text-xs);
+  color: var(--danger-text);
 }
 
 .select {
@@ -1108,4 +1143,478 @@
 
 .table__row--clickable:hover {
   background: var(--surface-2);
+}
+
+/* ----------------------------------------------------------------
+   ALERTS
+   ---------------------------------------------------------------- */
+
+.alert {
+  @apply flex items-start gap-3 text-sm rounded-md;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+}
+
+.alert__icon {
+  @apply flex-shrink-0;
+  margin-top: 1px;
+  font-size: 1rem;
+}
+
+.alert__content {
+  @apply flex-1;
+  line-height: 1.5;
+}
+
+.alert__title {
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.alert__dismiss {
+  @apply flex items-center justify-center flex-shrink-0;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: transparent;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  border-radius: 2px;
+}
+
+.alert__dismiss:hover {
+  opacity: 1;
+}
+
+.alert--info {
+  background: var(--primary-muted);
+  border-color: var(--primary);
+  color: var(--fg);
+}
+
+.alert--success {
+  background: var(--success-subtle);
+  border-color: var(--success);
+  color: var(--fg);
+}
+
+.alert--warning {
+  background: var(--warning-subtle);
+  border-color: var(--warning);
+  color: var(--fg);
+}
+
+.alert--danger {
+  background: var(--danger-subtle);
+  border-color: var(--danger);
+  color: var(--fg);
+}
+
+/* ----------------------------------------------------------------
+   STEPPER / PROGRESS
+   ---------------------------------------------------------------- */
+
+.stepper {
+  @apply flex items-center;
+  gap: 0;
+}
+
+.stepper__step {
+  @apply flex items-center;
+  gap: var(--space-2);
+}
+
+.stepper__indicator {
+  @apply flex items-center justify-center flex-shrink-0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  transition: background 200ms, border-color 200ms, color 200ms;
+}
+
+.stepper__label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: color 200ms;
+}
+
+.stepper__connector {
+  @apply flex-1;
+  height: 2px;
+  min-width: 2rem;
+  margin: 0 var(--space-2);
+  background: var(--border);
+  transition: background 200ms;
+}
+
+/* Step states */
+.stepper__step--completed .stepper__indicator {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-fg);
+}
+
+.stepper__step--completed .stepper__label {
+  color: var(--fg);
+}
+
+.stepper__connector--completed {
+  background: var(--primary);
+}
+
+.stepper__step--current .stepper__indicator {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-muted);
+}
+
+.stepper__step--current .stepper__label {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* ----------------------------------------------------------------
+   PROGRESS BAR
+   ---------------------------------------------------------------- */
+
+.progress {
+  @apply w-full;
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.progress__bar {
+  height: 100%;
+  background: var(--primary);
+  border-radius: var(--radius-full);
+  transition: width 300ms ease-out;
+}
+
+.progress__bar--success {
+  background: var(--success);
+}
+
+.progress__bar--warning {
+  background: var(--warning);
+}
+
+.progress__bar--danger {
+  background: var(--danger);
+}
+
+/* ----------------------------------------------------------------
+   CHECKLIST
+   ---------------------------------------------------------------- */
+
+.checklist {
+  @apply flex flex-col;
+  gap: 0;
+}
+
+.checklist__item {
+  @apply flex items-center gap-3;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--fg);
+}
+
+.checklist__item:last-child {
+  border-bottom: none;
+}
+
+.checklist__icon {
+  @apply flex items-center justify-center flex-shrink-0;
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.checklist__icon--done {
+  color: var(--success-text);
+}
+
+.checklist__icon--missing {
+  color: var(--muted);
+}
+
+.checklist__icon--warning {
+  color: var(--warning-text);
+}
+
+.checklist__text {
+  @apply flex-1;
+}
+
+.checklist__text--done {
+  color: var(--fg-2);
+}
+
+.checklist__badge {
+  @apply flex-shrink-0;
+}
+
+/* ----------------------------------------------------------------
+   UPLOAD AREA
+   ---------------------------------------------------------------- */
+
+.upload-area {
+  @apply flex flex-col items-center justify-center text-center;
+  padding: var(--space-10) var(--space-6);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 200ms, background 200ms;
+}
+
+.upload-area:hover {
+  border-color: var(--primary);
+  background: var(--primary-muted);
+}
+
+.upload-area--active {
+  border-color: var(--primary);
+  background: var(--primary-muted);
+}
+
+.upload-area__icon {
+  font-size: 2rem;
+  color: var(--muted);
+  margin-bottom: var(--space-3);
+}
+
+.upload-area__title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: var(--space-1);
+}
+
+.upload-area__subtitle {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/* ----------------------------------------------------------------
+   FILE LIST
+   ---------------------------------------------------------------- */
+
+.file-list {
+  @apply flex flex-col;
+  gap: var(--space-2);
+}
+
+.file-item {
+  @apply flex items-center gap-3;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.file-item__icon {
+  @apply flex-shrink-0;
+  font-size: 1.25rem;
+  color: var(--muted);
+}
+
+.file-item__info {
+  @apply flex-1;
+  min-width: 0;
+}
+
+.file-item__name {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-item__meta {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.file-item__status {
+  @apply flex-shrink-0;
+}
+
+.file-item__remove {
+  @apply flex items-center justify-center flex-shrink-0;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 150ms, background 150ms;
+}
+
+.file-item__remove:hover {
+  color: var(--danger-text);
+  background: var(--danger-subtle);
+}
+
+/* ----------------------------------------------------------------
+   HERO / ONBOARDING
+   ---------------------------------------------------------------- */
+
+.hero {
+  @apply flex flex-col items-center text-center;
+  padding: var(--space-16) var(--space-6) var(--space-12);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.hero__title {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: var(--fg);
+  line-height: 1.2;
+  margin-bottom: var(--space-4);
+  text-wrap: balance;
+}
+
+.hero__subtitle {
+  font-size: var(--text-base);
+  color: var(--fg-2);
+  line-height: 1.6;
+  margin-bottom: var(--space-8);
+  max-width: 480px;
+}
+
+.hero__actions {
+  @apply flex items-center gap-3;
+}
+
+/* ----------------------------------------------------------------
+   FEATURE ROTATOR
+   ---------------------------------------------------------------- */
+
+.feature-rotator {
+  max-width: 540px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.feature-rotator__tabs {
+  @apply flex;
+  border-bottom: 1px solid var(--border);
+  gap: 0;
+}
+
+.feature-rotator__tab {
+  @apply flex-1 text-sm font-medium;
+  padding: 0.625rem 0.75rem;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 200ms, border-color 200ms;
+  margin-bottom: -1px;
+  text-align: center;
+}
+
+.feature-rotator__tab:hover {
+  color: var(--fg-2);
+}
+
+.feature-rotator__tab--active {
+  color: var(--fg);
+  border-bottom-color: var(--primary);
+}
+
+.feature-rotator__content {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  animation: rotator-fade 300ms ease-out;
+}
+
+.feature-rotator__text {
+  font-size: var(--text-base);
+  color: var(--fg-2);
+  line-height: 1.6;
+}
+
+@keyframes rotator-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ----------------------------------------------------------------
+   READINESS SCORE
+   ---------------------------------------------------------------- */
+
+.readiness {
+  @apply flex flex-col items-center text-center;
+  padding: var(--space-8);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.readiness__score {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: var(--space-2);
+}
+
+.readiness__label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-4);
+}
+
+/* ----------------------------------------------------------------
+   SECTION LAYOUT
+   ---------------------------------------------------------------- */
+
+.page-section {
+  @apply flex flex-col;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.page-section__header {
+  @apply flex items-center justify-between gap-3;
+}
+
+.page-section__title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.page-section__subtitle {
+  font-size: var(--text-sm);
+  color: var(--fg-2);
 }

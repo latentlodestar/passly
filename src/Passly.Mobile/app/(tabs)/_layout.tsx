@@ -24,6 +24,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="evidence"
+        options={{
+          title: 'Evidence',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="doc.text.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="checklist"
+        options={{
+          title: 'Checklist',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="checklist" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',

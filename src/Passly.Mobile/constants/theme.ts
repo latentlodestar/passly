@@ -1,41 +1,39 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Theme constants — re-exports design tokens and provides
+ * backward-compatible Colors/Fonts objects for existing components.
  */
 
 import { Platform } from 'react-native';
+import { colors } from './design-tokens';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+export { colors, spacing, radius, fontSize, fontWeight, shadow } from './design-tokens';
+export type { ColorScheme, ColorToken } from './design-tokens';
 
+/** Backward-compatible color map used by ThemedView/ThemedText/tab layout */
 export const Colors = {
   light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    text: colors.light.fg,
+    background: colors.light.bg,
+    tint: colors.light.primary,
+    icon: colors.light.muted,
+    tabIconDefault: colors.light.muted,
+    tabIconSelected: colors.light.primary,
   },
   dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    text: colors.dark.fg,
+    background: colors.dark.bg,
+    tint: colors.dark.primary,
+    icon: colors.dark.muted,
+    tabIconDefault: colors.dark.muted,
+    tabIconSelected: colors.dark.primary,
   },
 };
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
     sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
     serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
     rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
     mono: 'ui-monospace',
   },
   default: {
