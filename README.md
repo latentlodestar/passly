@@ -1,103 +1,102 @@
-# Fairline
+# Passly
 
-Odds and edge analysis platform. Monorepo with .NET 10 backend, Aspire orchestration, Postgres storage, and React + Vite frontend.
+Structured risk-reduction software for high-stakes immigration paperwork. Passly guides applicants through relationship-based visa petitions step-by-step, analyzes supporting evidence, identifies documentation gaps, and helps users reach a "first-pass approval ready" state.
+
+**This is not a legal service and not a replacement for an attorney.** Passly is structured risk-reduction software designed to help applicants avoid preventable delays, RFEs, and errors.
+
+## The Problem
+
+When immigration applicants make mistakes, omissions, or provide weak documentation, the consequences are severe — months of delay, Requests for Evidence (RFEs), denials, or forced re-filings. The emotional and financial cost is significant. Most errors are preventable with better structure and guidance.
+
+## What Passly Does
+
+1. **Structures the application process** step-by-step (TurboTax-style guided flow)
+2. **Analyzes supporting evidence** — starting with chat exports (WhatsApp, etc.)
+3. **Extracts relationship timeline signals** — frequency, duration, key events
+4. **Identifies weak documentation areas** or missing proof
+5. **Generates structured summaries** suitable for formal submission
+6. **Flags potential inconsistencies or gaps**
+7. **Guides users toward approval readiness**
+
+## MVP Scope
+
+- Import/export WhatsApp conversations into the app
+- AI-powered extraction of relationship timeline signals (frequency, duration, key events)
+- Structured summaries and evidence strength indicators
+- Checklist of missing or weak documentation
+
+## Long-Term Vision
+
+- Fully guided application flow across petition types
+- Smart document ingestion and classification
+- Risk scoring and approval readiness indicators
+- Auto-filled forms where possible
+- Expansion beyond relationship visas into other high-stakes government processes
 
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (10.0.100+)
 - [Node.js](https://nodejs.org/) 20+ and npm
-- [Docker](https://www.docker.com/) (for Aspire resource provisioning and Docker Compose)
+- [Docker](https://www.docker.com/) (for Aspire resource provisioning and Testcontainers)
 - [Aspire CLI](https://aspire.dev) (`dotnet tool install -g aspire`)
 
 ## Architecture
 
+.NET 10 monorepo with React web frontend, React Native mobile app, Aspire orchestration, and Postgres storage.
+
 ```
 src/
-  Fairline.AppHost/         Aspire orchestrator
-  Fairline.ServiceDefaults/ Shared service config (OpenTelemetry, health, resilience)
-  Fairline.Api/             Minimal API endpoints
-  Fairline.Abstractions/    Interfaces + contracts/DTOs (shared between layers)
-  Fairline.Application/     Use cases (commands/queries/handlers)
-  Fairline.Domain/          Pure domain objects and value objects
-  Fairline.Infrastructure/  EF Core, Postgres, repository implementations
-  Fairline.Migrator/        Sidecar that runs EF Core migrations and exits
-  Fairline.Web/             React + Vite + TypeScript frontend
+  Passly.AppHost/         Aspire orchestrator
+  Passly.Abstractions/    Interfaces, contracts, CQRS query/command definitions
+  Passly.Core/            Handlers, business logic
+  Passly.Api/             Minimal API endpoints, DI wiring, migrations-on-boot
+  Passly.Persistence/     DbContexts, models, configurations, migrations
+  Passly.Infrastructure/  Service defaults (OpenTelemetry, health checks), external concerns
+  Passly.Web/             React + Vite + TypeScript web frontend
+  Passly.Mobile/          React Native + Expo mobile app
 
 tests/
-  Fairline.Domain.Tests/
-  Fairline.Application.Tests/
-  Fairline.Infrastructure.Tests/   (uses Testcontainers for Postgres)
-  Fairline.Api.Tests/              (integration tests with WebApplicationFactory)
+  Passly.Core.Tests/
+  Passly.Persistence.Tests/      (uses Testcontainers for Postgres)
+  Passly.Api.Tests/              (integration tests with WebApplicationFactory)
 ```
 
 ### Layer Rules
 
-| Layer | May depend on | Must NOT depend on |
-|-------|--------------|-------------------|
-| **Domain** | Nothing | EF Core, HTTP, IO |
-| **Abstractions** | Nothing | Any implementation |
-| **Application** | Domain, Abstractions | Infrastructure, API |
-| **Infrastructure** | Domain, Abstractions, EF Core | API |
-| **Api** | Application, Infrastructure (DI only) | Domain internals |
+| Layer              | May depend on              | Must NOT depend on       |
+|--------------------|----------------------------|--------------------------|
+| **Abstractions**   | Nothing                    | Any implementation       |
+| **Core**           | Abstractions, Persistence  | Infrastructure, Api      |
+| **Persistence**    | Abstractions               | Core, Infrastructure, Api|
+| **Infrastructure** | Abstractions               | Core, Persistence, Api   |
+| **Api**            | Core, Persistence, Infrastructure (DI only) | —        |
 
-## Database
+### Database
 
-**Postgres** with two schemas:
+**Postgres** with two bounded contexts via separate DbContexts:
 
-- **`ingest`** — raw provider data: `providers`, `odds_records`, `ingest_runs`, `ingest_logs`, `provider_requests`, `events`, `odds_snapshots`, `provider_catalog_snapshots`, `sport_catalog`, `tracked_leagues`
-- **`modeling`** — scenario analysis: `scenarios`, `scenario_comparisons`
+- **`IngestDbContext`** (schema: `ingest`) — document ingestion and raw evidence processing
+- **`ModelingDbContext`** (schema: `modeling`) — analysis, scoring, and structured outputs
 
-### Why separate DbContexts?
+Each context has independent migration histories. Migrations run on boot in Api's `Program.cs`.
 
-Each schema is owned by its own `DbContext` (`IngestDbContext`, `ModelingDbContext`). This provides:
-- Independent migration histories per schema
-- Clean bounded-context ownership
-- Ability to evolve schemas independently
-
-### Migrations
-
-Migrations live in `src/Fairline.Infrastructure/Migrations/{Ingest,Modeling}/`.
-
-The **Migrator** sidecar runs on startup, applies pending migrations for both contexts, then exits. In Aspire, the API uses `WaitForCompletion(migrator)` so it won't start until migrations finish.
-
-To add a new migration:
+To add a migration:
 
 ```bash
-# Ingest schema
 dotnet ef migrations add <Name> \
   --context IngestDbContext \
   --output-dir Migrations/Ingest \
-  --project src/Fairline.Infrastructure \
-  --startup-project src/Fairline.Api
-
-# Modeling schema
-dotnet ef migrations add <Name> \
-  --context ModelingDbContext \
-  --output-dir Migrations/Modeling \
-  --project src/Fairline.Infrastructure \
-  --startup-project src/Fairline.Api
+  --project src/Passly.Persistence \
+  --startup-project src/Passly.Api
 ```
 
-## Secrets & Configuration
+### Key Patterns
 
-### Odds API Key (required for ingestion)
-
-The ingestion system uses [The Odds API v4](https://the-odds-api.com/liveapi/guides/v4/) and requires an API key.
-
-**Development setup (user-secrets):**
-
-```bash
-dotnet user-secrets init --project src/Fairline.Api
-dotnet user-secrets set "OddsApi:ApiKey" "<YOUR_KEY>" --project src/Fairline.Api
-```
-
-**Container/production setup (environment variable):**
-
-```bash
-export ODDS_API_KEY=<YOUR_KEY>
-```
-
-The environment variable `ODDS_API_KEY` automatically maps to `OddsApi:ApiKey` in configuration.
+- **Minimal APIs** with extension methods for route mapping
+- **CQRS-style handlers** in Core layer
+- **DependencyInjection.cs** at each layer root wires up that layer's services
+- **Aspire orchestration** provisions Postgres and coordinates startup ordering
+- Centralized package versioning in `Directory.Packages.props`
 
 ## Running
 
@@ -107,7 +106,7 @@ The environment variable `ODDS_API_KEY` automatically maps to `OddsApi:ApiKey` i
 ./scripts/dev.sh
 ```
 
-This starts the Aspire dashboard, provisions a Postgres container, runs the migrator, starts the API, and launches the frontend dev server. Open the Aspire dashboard URL shown in the terminal.
+Starts the Aspire dashboard, provisions Postgres, runs migrations, starts the API, and launches the frontend dev server.
 
 ### With Docker Compose
 
@@ -115,116 +114,42 @@ This starts the Aspire dashboard, provisions a Postgres container, runs the migr
 ./scripts/compose-up.sh
 ```
 
-Starts Postgres, runs migrations, then starts the API on `http://localhost:5192`. Run the frontend separately:
-
-```bash
-cd src/Fairline.Web && npm install && npm run dev
-```
-
 ### Frontend only
 
 ```bash
-cd src/Fairline.Web
-npm install
-npm run dev
+cd src/Passly.Web && npm install && npm run dev
 ```
 
-The Vite dev server proxies `/api` and `/health` requests to the API.
+The Vite dev server proxies `/api` and `/health` to the backend.
+
+### Mobile
+
+```bash
+cd src/Passly.Mobile && npm install && npx expo start
+```
+
+Set `EXPO_PUBLIC_API_URL` to point at the running API (defaults to `http://localhost:5192`).
 
 ## API Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/health` | Health check (Aspire default) |
-| GET | `/alive` | Liveness check |
+| GET | `/health` | Health check |
+| GET | `/alive` | Liveness probe |
 | GET | `/api/status` | API version + DB connectivity |
-| GET | `/api/ingest/providers` | List configured providers |
-| POST | `/api/ingest/catalog/refresh` | Refresh sports catalog from Odds API |
-| GET | `/api/ingest/catalog` | Get sports catalog + tracked leagues |
-| POST | `/api/ingest/catalog/track` | Toggle tracked league `{ providerSportKey, enabled }` |
-| POST | `/api/ingest/run` | Start gap-fill ingestion `{ windowHours, regions, markets, books }` |
-| GET | `/api/ingest/runs` | List recent ingestion runs |
-| GET | `/api/ingest/runs/{runId}` | Get run detail with logs |
-| GET | `/api/ingest/runs/{runId}/stream` | SSE stream of run progress (events: `log`, `progress`, `summary`) |
-| GET | `/api/modeling/scenarios` | List scenarios |
-
-## Ingestion Workflow
-
-### 1. Set up your Odds API key
-
-See [Secrets & Configuration](#secrets--configuration) above.
-
-### 2. Refresh the sports catalog
-
-Navigate to the **Ingestion** page in the UI, or call the API:
-
-```bash
-curl -X POST http://localhost:5192/api/ingest/catalog/refresh
-```
-
-This fetches all available sports/leagues from The Odds API and stores them in the `sport_catalog` table.
-
-### 3. Enable leagues to track
-
-In the UI, toggle the checkboxes for leagues you want to track (e.g., NFL, NBA, EPL). By default, **no leagues are enabled** — you must explicitly select which to track.
-
-Or via API:
-```bash
-curl -X POST http://localhost:5192/api/ingest/catalog/track \
-  -H "Content-Type: application/json" \
-  -d '{"providerSportKey": "basketball_nba", "enabled": true}'
-```
-
-### 4. Run gap-fill ingestion
-
-Click **Start Ingestion** in the UI to run a gap-fill ingestion. This will:
-1. Check which tracked leagues need fresh data (based on freshness windows)
-2. Call the Odds API for stale leagues
-3. Store events and flattened odds snapshots
-4. Stream progress via SSE to the UI
-
-Default configuration:
-- **Markets:** h2h, spreads, totals
-- **Books:** DraftKings, Pinnacle (uses `bookmakers` param for efficiency)
-- **Freshness windows:**
-  - Events starting in ≤24h: 10-minute freshness
-  - Events starting in 24–72h: 60-minute freshness
-  - Events starting in >72h: 6-hour freshness
-
-Or via API:
-```bash
-curl -X POST http://localhost:5192/api/ingest/run \
-  -H "Content-Type: application/json" \
-  -d '{"windowHours": 72, "regions": ["us"], "markets": ["h2h","spreads","totals"], "books": ["draftkings","pinnacle"]}'
-```
-
-### 5. View logs and run history
-
-The **Ingestion** page shows live SSE logs during a run and a table of recent runs with status, counts, and errors.
-
-## Assumptions
-
-- **Outrights/futures:** Skipped in v1. The catalog stores `hasOutrights` so they can be added later.
-- **Bookmaker filtering:** Uses the Odds API `bookmakers` parameter (overrides `regions`; 10 books = 1 region quota cost). Defaults to DraftKings + Pinnacle but configurable per run.
-- **Provider:** Hard-coded to "the-odds-api" as the sole provider. The schema supports multiple providers but v1 only implements one.
-- **Odds format:** Always `decimal`. Stored as `numeric(18,6)` in Postgres.
-- **Gap detection:** Coarse-grained per league (not per-event). If any event in a league is stale, the entire league is refreshed. This slightly over-fetches but minimizes complexity.
-- **Background execution:** Ingestion runs execute in a background `Task.Run` within the API process. No persistent job queue in v1.
+| POST | `/api/log` | Frontend log forwarding |
 
 ## Testing
 
 ```bash
+# All tests (.NET + frontend)
 ./scripts/test.sh
-```
 
-Or run backend and frontend tests separately:
-
-```bash
-# .NET tests (requires Docker for Testcontainers in Infrastructure tests)
-dotnet test Fairline.sln
+# .NET tests only (requires Docker for Testcontainers)
+dotnet test Passly.sln
 
 # Frontend tests
-cd src/Fairline.Web && npm test
+cd src/Passly.Web && npm test
 ```
 
 ### Test stack
