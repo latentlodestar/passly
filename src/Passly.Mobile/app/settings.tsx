@@ -1,13 +1,17 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setAppearance, type Appearance } from '@/store/theme-slice';
+import { usePassphrase } from '@/hooks/use-passphrase';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
+import { TextField } from '@/components/ui/TextField';
+import { Button } from '@/components/ui/Button';
 
 const options: { value: Appearance; label: string; icon: 'brightness-auto' | 'light-mode' | 'dark-mode' }[] = [
   { value: 'system', label: 'System', icon: 'brightness-auto' },
@@ -21,6 +25,19 @@ export default function SettingsScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const appearance = useAppSelector((state) => state.theme.appearance);
+  const { passphrase: savedPassphrase, isLoaded, setPassphrase } = usePassphrase();
+  const [draft, setDraft] = useState('');
+  const [error, setError] = useState<string | undefined>();
+
+  const handleSavePassphrase = async () => {
+    if (draft.length < 8) {
+      setError('Must be at least 8 characters');
+      return;
+    }
+    setError(undefined);
+    await setPassphrase(draft);
+    setDraft('');
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]}>
@@ -82,6 +99,37 @@ export default function SettingsScreen() {
             })}
           </CardBody>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <View style={styles.passphraseHeader}>
+              <Text style={[styles.cardHeaderText, { color: t.fg2 }]}>
+                Encryption passphrase
+              </Text>
+              {isLoaded && savedPassphrase && (
+                <MaterialIcons name="check-circle" size={18} color={t.success} />
+              )}
+            </View>
+          </CardHeader>
+          <CardBody>
+            <Text style={[styles.passphraseHint, { color: t.muted }]}>
+              Your passphrase encrypts uploaded evidence. Choose something memorable — it cannot be recovered.
+            </Text>
+            <TextField
+              placeholder="Enter passphrase"
+              secureTextEntry
+              value={draft}
+              onChangeText={setDraft}
+              error={error}
+            />
+            <Button
+              label={savedPassphrase ? 'Update passphrase' : 'Save passphrase'}
+              size="sm"
+              onPress={handleSavePassphrase}
+              disabled={draft.length === 0}
+            />
+          </CardBody>
+        </Card>
       </View>
     </SafeAreaView>
   );
@@ -120,5 +168,20 @@ const styles = StyleSheet.create({
   },
   checkIcon: {
     marginLeft: 'auto',
+  },
+  passphraseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cardHeaderText: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  passphraseHint: {
+    fontSize: fontSize.sm,
+    lineHeight: 20,
   },
 });

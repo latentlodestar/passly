@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <RootNamespace>Passly.MigrationRunner</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Passly.Persistence\Passly.Persistence.csproj" />
+    <ProjectReference Include="..\Passly.Infrastructure\Passly.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

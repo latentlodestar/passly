@@ -66,4 +66,5 @@ public sealed class StatusEndpointTests : IClassFixture<WebApplicationFactory<Pr
         foreach (var descriptor in toRemove)
             services.Remove(descriptor);
     }
+
 }

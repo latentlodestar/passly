@@ -1,14 +1,24 @@
-using Microsoft.EntityFrameworkCore;
+using Passly.Abstractions.Contracts;
 using Passly.Api.Endpoints;
 using Passly.Core;
+using Passly.Core.Ingest;
 using Passly.Infrastructure;
 using Passly.Persistence;
+using Rebus.Config;
+using Rebus.Routing.TypeBased;
+using Rebus.Transport.InMem;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddInfrastructure();
 builder.AddPersistence();
 builder.Services.AddCore();
+
+builder.Services.AddRebus(cfg => cfg
+    .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "passly-imports"))
+    .Routing(r => r.TypeBased().Map<ChatImportCreated>("passly-imports")));
+
+builder.Services.AutoRegisterHandlersFromAssemblyOf<ChatImportCreatedHandler>();
 
 builder.Services.AddCors(options =>
 {
@@ -22,23 +32,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-await MigrateAsync<IngestDbContext>(app);
-await MigrateAsync<ModelingDbContext>(app);
-
 app.UseCors();
 app.MapDefaultEndpoints();
 app.MapStatusEndpoints();
 app.MapLogEndpoints();
+app.MapImportEndpoints();
 
 app.Run();
-
-static async Task MigrateAsync<TContext>(WebApplication app) where TContext : DbContext
-{
-    using var scope = app.Services.CreateScope();
-    var context = scope.ServiceProvider.GetRequiredService<TContext>();
-    if (!context.Database.IsRelational()) return;
-    var strategy = context.Database.CreateExecutionStrategy();
-    await strategy.ExecuteAsync(() => context.Database.MigrateAsync());
-}
 
 public partial class Program;

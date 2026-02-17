@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Passly.Api\Passly.Api.csproj" />
+    <ProjectReference Include="..\Passly.MigrationRunner\Passly.MigrationRunner.csproj" />
   </ItemGroup>
 
 </Project>

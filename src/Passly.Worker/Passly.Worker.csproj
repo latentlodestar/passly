@@ -1,13 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
-    <RootNamespace>Passly.Api</RootNamespace>
-    <UserSecretsId>038884bc-a996-4264-957a-470080d3e997</UserSecretsId>
+    <RootNamespace>Passly.Worker</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="All" />
     <PackageReference Include="Rebus.ServiceProvider" />
+    <PackageReference Include="Rebus.AmazonSqs" />
   </ItemGroup>
 
   <ItemGroup>

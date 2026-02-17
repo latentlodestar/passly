@@ -8,9 +8,13 @@ var postgres = builder.AddPostgres("postgres", password: postgresPassword)
 
 var db = postgres.AddDatabase("passlydb");
 
-var api = builder.AddProject<Projects.Passly_Api>("api")
+var migrations = builder.AddProject<Projects.Passly_MigrationRunner>("migrations")
     .WithReference(db)
     .WaitFor(db);
+
+var api = builder.AddProject<Projects.Passly_Api>("api")
+    .WithReference(db)
+    .WaitFor(migrations);
 
 builder.AddViteApp("web", "../Passly.Web")
     .WithEndpoint("http", e => e.Port = 5019)

@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
+import { ShareIntentProvider } from 'expo-share-intent';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -31,7 +32,9 @@ export default function RootLayout() {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <RootNavigator />
+        <ShareIntentProvider>
+          <RootNavigator />
+        </ShareIntentProvider>
       </PersistGate>
     </Provider>
   );
