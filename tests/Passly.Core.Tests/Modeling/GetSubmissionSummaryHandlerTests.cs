@@ -5,22 +5,22 @@ using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
 using Passly.Core.Modeling;
 using Passly.Persistence;
-using Passly.Persistence.Models.Modeling;
+using Passly.Persistence.Models;
 
 namespace Passly.Core.Tests.Modeling;
 
 public sealed class GetSubmissionSummaryHandlerTests : IDisposable
 {
-    private readonly ModelingDbContext _db;
+    private readonly AppDbContext _db;
     private readonly IEncryptionService _encryption = Substitute.For<IEncryptionService>();
     private readonly GetSubmissionSummaryHandler _sut;
 
     public GetSubmissionSummaryHandlerTests()
     {
-        var options = new DbContextOptionsBuilder<ModelingDbContext>()
-            .UseInMemoryDatabase($"modeling-{Guid.NewGuid()}")
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"app-{Guid.NewGuid()}")
             .Options;
-        _db = new ModelingDbContext(options);
+        _db = new AppDbContext(options);
         _sut = new GetSubmissionSummaryHandler(_db, _encryption);
     }
 

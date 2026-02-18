@@ -15,6 +15,7 @@ public static class ImportEndpoints
         app.MapPost("/api/imports", async (
             IFormFile file,
             [FromForm] string deviceId,
+            [FromForm] string submissionId,
             [FromForm] string passphrase,
             CreateChatImportHandler handler,
             IBus bus,
@@ -33,12 +34,18 @@ public static class ImportEndpoints
             if (string.IsNullOrWhiteSpace(deviceId))
                 return Results.BadRequest(new { error = "deviceId is required." });
 
+            if (!Guid.TryParse(submissionId, out var parsedSubmissionId))
+                return Results.BadRequest(new { error = "submissionId is required." });
+
             if (string.IsNullOrWhiteSpace(passphrase) || passphrase.Length < 8)
                 return Results.BadRequest(new { error = "Passphrase must be at least 8 characters." });
 
             using var stream = file.OpenReadStream();
-            var (response, isDuplicate) = await handler.HandleAsync(
-                stream, file.FileName, file.ContentType, deviceId, passphrase, ct);
+            var (response, isDuplicate, error) = await handler.HandleAsync(
+                stream, file.FileName, file.ContentType, deviceId, parsedSubmissionId, passphrase, ct);
+
+            if (error is not null)
+                return Results.NotFound(new { error });
 
             if (isDuplicate)
                 return Results.Conflict(new { error = "This file has already been imported." });

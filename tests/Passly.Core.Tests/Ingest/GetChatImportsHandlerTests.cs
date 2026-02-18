@@ -2,21 +2,21 @@ using Microsoft.EntityFrameworkCore;
 using Passly.Abstractions.Contracts;
 using Passly.Core.Ingest;
 using Passly.Persistence;
-using Passly.Persistence.Models.Ingest;
+using Passly.Persistence.Models;
 
 namespace Passly.Core.Tests.Ingest;
 
 public sealed class GetChatImportsHandlerTests : IDisposable
 {
-    private readonly IngestDbContext _db;
+    private readonly AppDbContext _db;
     private readonly GetChatImportsHandler _sut;
 
     public GetChatImportsHandlerTests()
     {
-        var options = new DbContextOptionsBuilder<IngestDbContext>()
+        var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        _db = new IngestDbContext(options);
+        _db = new AppDbContext(options);
         _sut = new GetChatImportsHandler(_db);
     }
 
@@ -62,6 +62,7 @@ public sealed class GetChatImportsHandlerTests : IDisposable
     {
         Id = Guid.NewGuid(),
         DeviceId = deviceId,
+        SubmissionId = Guid.NewGuid(),
         FileName = fileName,
         FileHash = Guid.NewGuid().ToString(),
         ContentType = "text/plain",

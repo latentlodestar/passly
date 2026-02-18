@@ -8,7 +8,7 @@ using Passly.Persistence;
 namespace Passly.Core.Ingest;
 
 public sealed class GetRepresentativeMessagesHandler(
-    IngestDbContext db,
+    AppDbContext db,
     IEncryptionService encryption,
     IEmbeddingService embeddings,
     IMessageCurator curator)

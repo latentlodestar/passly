@@ -5,13 +5,13 @@ using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
 using Passly.Core.Ingest;
 using Passly.Persistence;
-using Passly.Persistence.Models.Ingest;
+using Passly.Persistence.Models;
 
 namespace Passly.Core.Tests.Ingest;
 
 public sealed class ParseChatImportHandlerTests : IDisposable
 {
-    private readonly IngestDbContext _db;
+    private readonly AppDbContext _db;
     private readonly IEncryptionService _encryption;
     private readonly IClock _clock;
     private readonly ParseChatImportHandler _sut;
@@ -19,10 +19,10 @@ public sealed class ParseChatImportHandlerTests : IDisposable
 
     public ParseChatImportHandlerTests()
     {
-        var options = new DbContextOptionsBuilder<IngestDbContext>()
+        var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        _db = new IngestDbContext(options);
+        _db = new AppDbContext(options);
 
         _encryption = Substitute.For<IEncryptionService>();
 
@@ -144,6 +144,7 @@ public sealed class ParseChatImportHandlerTests : IDisposable
         {
             Id = Guid.NewGuid(),
             DeviceId = "device-1",
+            SubmissionId = Guid.NewGuid(),
             FileName = "chat.txt",
             FileHash = "abc123",
             ContentType = "text/plain",

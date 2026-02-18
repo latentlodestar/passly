@@ -5,12 +5,12 @@ using Microsoft.Extensions.Logging;
 using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
 using Passly.Persistence;
-using Passly.Persistence.Models.Ingest;
+using Passly.Persistence.Models;
 
 namespace Passly.Core.Ingest;
 
 public sealed class ParseChatImportHandler(
-    IngestDbContext db,
+    AppDbContext db,
     IEncryptionService encryption,
     WhatsAppChatParser parser,
     IClock clock,

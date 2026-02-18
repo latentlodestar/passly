@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Passly.Core.Ingest;
 
-public sealed class GetChatImportsHandler(IngestDbContext db)
+public sealed class GetChatImportsHandler(AppDbContext db)
 {
     public async Task<IReadOnlyList<ChatImportSummaryResponse>> HandleAsync(
         string deviceId,
@@ -15,6 +15,7 @@ public sealed class GetChatImportsHandler(IngestDbContext db)
             .OrderByDescending(c => c.CreatedAt)
             .Select(c => new ChatImportSummaryResponse(
                 c.Id,
+                c.SubmissionId,
                 c.FileName,
                 c.ContentType,
                 c.Status.ToString(),

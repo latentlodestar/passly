@@ -22,11 +22,9 @@ public sealed class StatusEndpointTests : IClassFixture<WebApplicationFactory<Pr
             builder.UseSetting("ConnectionStrings:passlydb", "Host=localhost;Database=test");
             builder.ConfigureServices(services =>
             {
-                RemoveDbContextServices<IngestDbContext>(services);
-                RemoveDbContextServices<ModelingDbContext>(services);
+                RemoveDbContextServices<AppDbContext>(services);
 
-                services.AddDbContext<IngestDbContext>(opts => opts.UseInMemoryDatabase("TestIngest"));
-                services.AddDbContext<ModelingDbContext>(opts => opts.UseInMemoryDatabase("TestModeling"));
+                services.AddDbContext<AppDbContext>(opts => opts.UseInMemoryDatabase("TestApp"));
 
                 var checker = Substitute.For<IDbContextChecker>();
                 checker.CanConnectAsync(Arg.Any<CancellationToken>()).Returns(true);

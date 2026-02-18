@@ -3,7 +3,7 @@ using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
 using Passly.Core.Ingest;
 using Passly.Persistence;
-using Passly.Persistence.Models.Ingest;
+using Passly.Persistence.Models;
 using System.Text;
 using System.Text.Json;
 
@@ -11,7 +11,7 @@ namespace Passly.Core.Tests.Ingest;
 
 public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
 {
-    private readonly IngestDbContext _db;
+    private readonly AppDbContext _db;
     private readonly IEncryptionService _encryption;
     private readonly IEmbeddingService _embeddings;
     private readonly IMessageCurator _curator;
@@ -22,10 +22,10 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
 
     public GetRepresentativeMessagesHandlerTests()
     {
-        var options = new DbContextOptionsBuilder<IngestDbContext>()
+        var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        _db = new IngestDbContext(options);
+        _db = new AppDbContext(options);
 
         _encryption = Substitute.For<IEncryptionService>();
         _embeddings = Substitute.For<IEmbeddingService>();
@@ -157,6 +157,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
         {
             Id = Guid.NewGuid(),
             DeviceId = DeviceId,
+            SubmissionId = Guid.NewGuid(),
             FileName = "chat.txt",
             FileHash = "abc123",
             ContentType = "text/plain",

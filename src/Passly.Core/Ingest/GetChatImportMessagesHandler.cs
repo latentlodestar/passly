@@ -8,7 +8,7 @@ using Passly.Persistence;
 namespace Passly.Core.Ingest;
 
 public sealed class GetChatImportMessagesHandler(
-    IngestDbContext db,
+    AppDbContext db,
     IEncryptionService encryption)
 {
     public async Task<ChatImportDetailResponse?> HandleAsync(

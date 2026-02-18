@@ -25,11 +25,9 @@ public sealed class ImportEndpointTests : IClassFixture<WebApplicationFactory<Pr
             builder.UseSetting("ConnectionStrings:passlydb", "Host=localhost;Database=test");
             builder.ConfigureServices(services =>
             {
-                RemoveDbContextServices<IngestDbContext>(services);
-                RemoveDbContextServices<ModelingDbContext>(services);
+                RemoveDbContextServices<AppDbContext>(services);
 
-                services.AddDbContext<IngestDbContext>(opts => opts.UseInMemoryDatabase(_dbName));
-                services.AddDbContext<ModelingDbContext>(opts => opts.UseInMemoryDatabase(_dbName + "-modeling"));
+                services.AddDbContext<AppDbContext>(opts => opts.UseInMemoryDatabase(_dbName));
 
                 var checker = Substitute.For<IDbContextChecker>();
                 checker.CanConnectAsync(Arg.Any<CancellationToken>()).Returns(true);
@@ -39,10 +37,18 @@ public sealed class ImportEndpointTests : IClassFixture<WebApplicationFactory<Pr
         }).CreateClient();
     }
 
+    private async Task<string> CreateSubmissionForDevice(string deviceId)
+    {
+        var response = await _client.PostAsJsonAsync("/api/submissions", new { deviceId, label = "Test" });
+        var body = await response.Content.ReadFromJsonAsync<SubmissionResponse>();
+        return body!.Id.ToString();
+    }
+
     [Fact]
     public async Task PostImport_ValidFile_Returns201()
     {
-        var content = BuildMultipartContent("test-chat.txt", "Hello world", "device-123", "passphrase12345");
+        var submissionId = await CreateSubmissionForDevice("device-123");
+        var content = BuildMultipartContent("test-chat.txt", "Hello world", "device-123", submissionId, "passphrase12345");
 
         var response = await _client.PostAsync("/api/imports", content);
 
@@ -56,7 +62,7 @@ public sealed class ImportEndpointTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task PostImport_EmptyFile_Returns400()
     {
-        var content = BuildMultipartContent("empty.txt", "", "device-123", "passphrase12345");
+        var content = BuildMultipartContent("empty.txt", "", "device-123", Guid.NewGuid().ToString(), "passphrase12345");
 
         var response = await _client.PostAsync("/api/imports", content);
 
@@ -66,7 +72,7 @@ public sealed class ImportEndpointTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task PostImport_InvalidExtension_Returns400()
     {
-        var content = BuildMultipartContent("photo.jpg", "binary data", "device-123", "passphrase12345");
+        var content = BuildMultipartContent("photo.jpg", "binary data", "device-123", Guid.NewGuid().ToString(), "passphrase12345");
 
         var response = await _client.PostAsync("/api/imports", content);
 
@@ -76,7 +82,7 @@ public sealed class ImportEndpointTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task PostImport_ShortPassphrase_Returns400()
     {
-        var content = BuildMultipartContent("chat.txt", "Hello", "device-123", "short");
+        var content = BuildMultipartContent("chat.txt", "Hello", "device-123", Guid.NewGuid().ToString(), "short");
 
         var response = await _client.PostAsync("/api/imports", content);
 
@@ -86,10 +92,11 @@ public sealed class ImportEndpointTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task PostImport_DuplicateFile_Returns409()
     {
-        var content1 = BuildMultipartContent("chat.txt", "same content", "device-123", "passphrase12345");
+        var submissionId = await CreateSubmissionForDevice("device-dup");
+        var content1 = BuildMultipartContent("chat.txt", "same content", "device-dup", submissionId, "passphrase12345");
         await _client.PostAsync("/api/imports", content1);
 
-        var content2 = BuildMultipartContent("chat-copy.txt", "same content", "device-123", "passphrase12345");
+        var content2 = BuildMultipartContent("chat-copy.txt", "same content", "device-dup", submissionId, "passphrase12345");
         var response = await _client.PostAsync("/api/imports", content2);
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
@@ -98,7 +105,8 @@ public sealed class ImportEndpointTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task GetImports_ReturnsImportsForDevice()
     {
-        var content = BuildMultipartContent("chat.txt", "Hello world", "device-456", "passphrase12345");
+        var submissionId = await CreateSubmissionForDevice("device-456");
+        var content = BuildMultipartContent("chat.txt", "Hello world", "device-456", submissionId, "passphrase12345");
         await _client.PostAsync("/api/imports", content);
 
         var response = await _client.GetAsync("/api/imports?deviceId=device-456");
@@ -121,8 +129,9 @@ public sealed class ImportEndpointTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task PostImport_ValidFile_IsProcessedByRebus()
     {
+        var submissionId = await CreateSubmissionForDevice("device-rebus");
         var chatContent = "[02/14/26, 2:30:00 PM] Alice: Hello!\n[02/14/26, 2:31:00 PM] Bob: Hi there!";
-        var content = BuildMultipartContent("chat.txt", chatContent, "device-rebus", "passphrase12345");
+        var content = BuildMultipartContent("chat.txt", chatContent, "device-rebus", submissionId, "passphrase12345");
 
         var postResponse = await _client.PostAsync("/api/imports", content);
         postResponse.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -136,8 +145,18 @@ public sealed class ImportEndpointTests : IClassFixture<WebApplicationFactory<Pr
         imports![0].Status.Should().Be("Parsed");
     }
 
+    [Fact]
+    public async Task PostImport_MissingSubmissionId_Returns400()
+    {
+        var content = BuildMultipartContent("chat.txt", "Hello", "device-123", "", "passphrase12345");
+
+        var response = await _client.PostAsync("/api/imports", content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     private static MultipartFormDataContent BuildMultipartContent(
-        string fileName, string fileContent, string deviceId, string passphrase)
+        string fileName, string fileContent, string deviceId, string submissionId, string passphrase)
     {
         var content = new MultipartFormDataContent();
 
@@ -147,6 +166,7 @@ public sealed class ImportEndpointTests : IClassFixture<WebApplicationFactory<Pr
         content.Add(fileStreamContent, "file", fileName);
 
         content.Add(new StringContent(deviceId), "deviceId");
+        content.Add(new StringContent(submissionId), "submissionId");
         content.Add(new StringContent(passphrase), "passphrase");
 
         return content;

@@ -256,6 +256,7 @@ export default function EvidenceScreen() {
   useStepSync('ImportEvidence');
 
   const deviceId = useDeviceId();
+  const activeSubmissionId = useAppSelector((s) => s.activeSubmission.id);
   const { passphrase, isLoaded: passphraseLoaded } = usePassphrase();
   const [shouldPoll, setShouldPoll] = useState(false);
   const { data: imports = [] } = useGetChatImportsQuery(deviceId ?? '', {
@@ -280,7 +281,7 @@ export default function EvidenceScreen() {
   /* ---- Upload ---- */
 
   const uploadFile = useCallback(async (fileUri: string, fileName: string, mimeType: string) => {
-    if (!deviceId || !passphrase) return;
+    if (!deviceId || !passphrase || !activeSubmissionId) return;
 
     const uploadKey = `${fileName}-${Date.now()}`;
     setLocalUploads((prev) => ({ ...prev, [uploadKey]: { fileName, status: 'uploading' } }));
@@ -297,6 +298,7 @@ export default function EvidenceScreen() {
       }
 
       formData.append('deviceId', deviceId);
+      formData.append('submissionId', activeSubmissionId);
       formData.append('passphrase', passphrase);
 
       await uploadChatExport(formData).unwrap();
@@ -316,7 +318,7 @@ export default function EvidenceScreen() {
         [uploadKey]: { fileName, status: 'error', error: message },
       }));
     }
-  }, [deviceId, passphrase, uploadChatExport]);
+  }, [deviceId, activeSubmissionId, passphrase, uploadChatExport]);
 
   /* ---- Share intent ---- */
 

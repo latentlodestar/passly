@@ -4,22 +4,37 @@ using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
 using Passly.Core.Ingest;
 using Passly.Persistence;
+using Passly.Persistence.Models;
 
 namespace Passly.Core.Tests.Ingest;
 
 public sealed class CreateChatImportHandlerTests : IDisposable
 {
-    private readonly IngestDbContext _db;
+    private readonly AppDbContext _db;
     private readonly IEncryptionService _encryption;
     private readonly IClock _clock;
     private readonly CreateChatImportHandler _sut;
+    private readonly Guid _submissionId = Guid.NewGuid();
 
     public CreateChatImportHandlerTests()
     {
-        var options = new DbContextOptionsBuilder<IngestDbContext>()
+        var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
-        _db = new IngestDbContext(options);
+        _db = new AppDbContext(options);
+
+        // Seed a submission for FK validation
+        _db.Submissions.Add(new Submission
+        {
+            Id = _submissionId,
+            DeviceId = "device-1",
+            Label = "Test",
+            Status = SubmissionStatus.Active,
+            CurrentStep = SubmissionStep.GetStarted,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        });
+        _db.SaveChanges();
 
         _encryption = Substitute.For<IEncryptionService>();
         _encryption.Encrypt(Arg.Any<byte[]>(), Arg.Any<string>())
@@ -40,10 +55,11 @@ public sealed class CreateChatImportHandlerTests : IDisposable
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes("chat content"));
 
-        var (response, isDuplicate) = await _sut.HandleAsync(
-            stream, "chat.txt", "text/plain", "device-1", "passphrase123");
+        var (response, isDuplicate, error) = await _sut.HandleAsync(
+            stream, "chat.txt", "text/plain", "device-1", _submissionId, "passphrase123");
 
         isDuplicate.Should().BeFalse();
+        error.Should().BeNull();
         response.Should().NotBeNull();
         response!.FileName.Should().Be("chat.txt");
         response.Status.Should().Be("Pending");
@@ -51,6 +67,7 @@ public sealed class CreateChatImportHandlerTests : IDisposable
         var saved = await _db.ChatImports.SingleAsync();
         saved.DeviceId.Should().Be("device-1");
         saved.FileName.Should().Be("chat.txt");
+        saved.SubmissionId.Should().Be(_submissionId);
     }
 
     [Fact]
@@ -59,11 +76,11 @@ public sealed class CreateChatImportHandlerTests : IDisposable
         var content = Encoding.UTF8.GetBytes("same content");
 
         using var stream1 = new MemoryStream(content);
-        await _sut.HandleAsync(stream1, "chat.txt", "text/plain", "device-1", "passphrase123");
+        await _sut.HandleAsync(stream1, "chat.txt", "text/plain", "device-1", _submissionId, "passphrase123");
 
         using var stream2 = new MemoryStream(content);
-        var (response, isDuplicate) = await _sut.HandleAsync(
-            stream2, "chat-copy.txt", "text/plain", "device-1", "passphrase123");
+        var (response, isDuplicate, _) = await _sut.HandleAsync(
+            stream2, "chat-copy.txt", "text/plain", "device-1", _submissionId, "passphrase123");
 
         isDuplicate.Should().BeTrue();
         response.Should().BeNull();
@@ -72,17 +89,44 @@ public sealed class CreateChatImportHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsync_SameFileFromDifferentDevice_Succeeds()
     {
+        // Seed a second submission for device-2
+        var submission2Id = Guid.NewGuid();
+        _db.Submissions.Add(new Submission
+        {
+            Id = submission2Id,
+            DeviceId = "device-2",
+            Label = "Test 2",
+            Status = SubmissionStatus.Active,
+            CurrentStep = SubmissionStep.GetStarted,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+        });
+        await _db.SaveChangesAsync();
+
         var content = Encoding.UTF8.GetBytes("shared content");
 
         using var stream1 = new MemoryStream(content);
-        await _sut.HandleAsync(stream1, "chat.txt", "text/plain", "device-1", "passphrase123");
+        await _sut.HandleAsync(stream1, "chat.txt", "text/plain", "device-1", _submissionId, "passphrase123");
 
         using var stream2 = new MemoryStream(content);
-        var (response, isDuplicate) = await _sut.HandleAsync(
-            stream2, "chat.txt", "text/plain", "device-2", "passphrase456");
+        var (response, isDuplicate, _) = await _sut.HandleAsync(
+            stream2, "chat.txt", "text/plain", "device-2", submission2Id, "passphrase456");
 
         isDuplicate.Should().BeFalse();
         response.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsync_SubmissionNotFound_ReturnsError()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("chat content"));
+
+        var (response, isDuplicate, error) = await _sut.HandleAsync(
+            stream, "chat.txt", "text/plain", "device-1", Guid.NewGuid(), "passphrase123");
+
+        response.Should().BeNull();
+        isDuplicate.Should().BeFalse();
+        error.Should().Be("Submission not found.");
     }
 
     public void Dispose() => _db.Dispose();

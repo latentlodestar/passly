@@ -38,9 +38,8 @@ cd src/Passly.Web && npm test
 # Full solution build
 dotnet build Passly.sln
 
-# Add EF Core migration (substitute context/schema as needed)
-dotnet ef migrations add <Name> --context IngestDbContext --output-dir Migrations/Ingest --project src/Passly.Persistence --startup-project src/Passly.Api
-dotnet ef migrations add <Name> --context ModelingDbContext --output-dir Migrations/Modeling --project src/Passly.Persistence --startup-project src/Passly.Api
+# Add EF Core migration
+dotnet ef migrations add <Name> --context AppDbContext --output-dir Migrations --project src/Passly.Persistence --startup-project src/Passly.Api
 ```
 
 ## Architecture
@@ -84,7 +83,7 @@ Infrastructure → Abstractions
 
 - **Minimal APIs** with extension methods for route mapping (e.g., `MapStatusEndpoints`)
 - **CQRS-style handlers** in Core layer (e.g., `GetStatusHandler`)
-- **Two bounded contexts** with separate DbContexts: `IngestDbContext` (schema `ingest`) and `ModelingDbContext` (schema `modeling`), each with independent migration histories
+- **Single `AppDbContext`** with schema `app` containing all entities (Submissions, ChatImports, ChatMessages, SubmissionSummaries) with real FK relationships
 - **Migrations run on boot** in Api's `Program.cs` (no separate migrator sidecar)
 - **DependencyInjection.cs** files at each layer root wire up that layer's services
 - **Aspire orchestration** (`Passly.AppHost`) provisions Postgres and coordinates startup ordering

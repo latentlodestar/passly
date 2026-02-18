@@ -1,0 +1,8 @@
+storage_mode("s3")
+
+s3_bucket(ENV["MATCH_S3_BUCKET"] || "passly-match-certificates")
+s3_region(ENV["MATCH_S3_REGION"] || "us-east-1")
+
+type("appstore")
+
+app_identifier("latentlodestar.passly")

@@ -7,7 +7,7 @@ using Passly.Persistence;
 namespace Passly.Core.Modeling;
 
 public sealed class GetSubmissionSummaryHandler(
-    ModelingDbContext db,
+    AppDbContext db,
     IEncryptionService encryption)
 {
     public async Task<(byte[]? PdfBytes, SubmissionSummaryResponse? Metadata, GetSubmissionSummaryError? Error)> HandleAsync(

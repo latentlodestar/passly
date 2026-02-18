@@ -3,14 +3,13 @@ using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
 using Passly.Core.Modeling;
 using Passly.Persistence;
-using Passly.Persistence.Models.Modeling;
+using Passly.Persistence.Models;
 
 namespace Passly.Core.Tests.Modeling;
 
 public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
 {
-    private readonly ModelingDbContext _modelingDb;
-    private readonly IngestDbContext _ingestDb;
+    private readonly AppDbContext _db;
     private readonly IEncryptionService _encryption = Substitute.For<IEncryptionService>();
     private readonly IEmbeddingService _embeddings = Substitute.For<IEmbeddingService>();
     private readonly IMessageCurator _curator = Substitute.For<IMessageCurator>();
@@ -20,26 +19,20 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
 
     public GenerateSubmissionSummaryHandlerTests()
     {
-        var modelingOptions = new DbContextOptionsBuilder<ModelingDbContext>()
-            .UseInMemoryDatabase($"modeling-{Guid.NewGuid()}")
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"app-{Guid.NewGuid()}")
             .Options;
-        _modelingDb = new ModelingDbContext(modelingOptions);
-
-        var ingestOptions = new DbContextOptionsBuilder<IngestDbContext>()
-            .UseInMemoryDatabase($"ingest-{Guid.NewGuid()}")
-            .Options;
-        _ingestDb = new IngestDbContext(ingestOptions);
+        _db = new AppDbContext(options);
 
         _clock.UtcNow.Returns(DateTimeOffset.UtcNow);
 
         _sut = new GenerateSubmissionSummaryHandler(
-            _modelingDb, _ingestDb, _encryption, _embeddings, _curator, _pdfGenerator, _clock);
+            _db, _encryption, _embeddings, _curator, _pdfGenerator, _clock);
     }
 
     public void Dispose()
     {
-        _modelingDb.Dispose();
-        _ingestDb.Dispose();
+        _db.Dispose();
     }
 
     [Fact]
@@ -81,8 +74,8 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
                 CreatedAt = DateTimeOffset.UtcNow,
             },
         };
-        _modelingDb.Submissions.Add(submission);
-        await _modelingDb.SaveChangesAsync();
+        _db.Submissions.Add(submission);
+        await _db.SaveChangesAsync();
 
         var request = new GenerateSubmissionSummaryRequest("device-1", "pass", Guid.NewGuid());
 
@@ -96,7 +89,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
     public async Task HandleAsync_ImportNotFound_ReturnsError()
     {
         var submissionId = Guid.NewGuid();
-        _modelingDb.Submissions.Add(new Submission
+        _db.Submissions.Add(new Submission
         {
             Id = submissionId,
             DeviceId = "device-1",
@@ -106,7 +99,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         });
-        await _modelingDb.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
         var request = new GenerateSubmissionSummaryRequest("device-1", "pass", Guid.NewGuid());
 
@@ -122,7 +115,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         var submissionId = Guid.NewGuid();
         var importId = Guid.NewGuid();
 
-        _modelingDb.Submissions.Add(new Submission
+        _db.Submissions.Add(new Submission
         {
             Id = submissionId,
             DeviceId = "device-1",
@@ -132,12 +125,12 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         });
-        await _modelingDb.SaveChangesAsync();
 
-        _ingestDb.ChatImports.Add(new Persistence.Models.Ingest.ChatImport
+        _db.ChatImports.Add(new ChatImport
         {
             Id = importId,
             DeviceId = "device-1",
+            SubmissionId = submissionId,
             FileName = "chat.txt",
             FileHash = "abc",
             ContentType = "text/plain",
@@ -149,7 +142,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         });
-        await _ingestDb.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
         var request = new GenerateSubmissionSummaryRequest("device-1", "pass", importId);
 
@@ -165,7 +158,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         var submissionId = Guid.NewGuid();
         var importId = Guid.NewGuid();
 
-        _modelingDb.Submissions.Add(new Submission
+        _db.Submissions.Add(new Submission
         {
             Id = submissionId,
             DeviceId = "device-1",
@@ -175,12 +168,12 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         });
-        await _modelingDb.SaveChangesAsync();
 
-        _ingestDb.ChatImports.Add(new Persistence.Models.Ingest.ChatImport
+        _db.ChatImports.Add(new ChatImport
         {
             Id = importId,
             DeviceId = "device-1",
+            SubmissionId = submissionId,
             FileName = "chat.txt",
             FileHash = "abc",
             ContentType = "text/plain",
@@ -192,7 +185,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         });
-        await _ingestDb.SaveChangesAsync();
+        await _db.SaveChangesAsync();
 
         // No chat messages — curation returns empty
         _curator.CurateAsync(
@@ -219,7 +212,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         response.SelectedMessages.Should().Be(0);
         response.GapCount.Should().Be(0);
 
-        var persisted = await _modelingDb.SubmissionSummaries.FirstOrDefaultAsync();
+        var persisted = await _db.SubmissionSummaries.FirstOrDefaultAsync();
         persisted.Should().NotBeNull();
         persisted!.SubmissionId.Should().Be(submissionId);
     }

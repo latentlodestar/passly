@@ -4,7 +4,7 @@ using Passly.Persistence;
 
 namespace Passly.Core.Modeling;
 
-public sealed class GetSubmissionSummaryMetadataHandler(ModelingDbContext db)
+public sealed class GetSubmissionSummaryMetadataHandler(AppDbContext db)
 {
     public async Task<SubmissionSummaryResponse?> HandleAsync(
         Guid submissionId,

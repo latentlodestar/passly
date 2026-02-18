@@ -12,8 +12,7 @@ public class MigrationWorker(
     {
         logger.LogInformation("Starting database migrations");
 
-        await MigrateAsync<IngestDbContext>(stoppingToken);
-        await MigrateAsync<ModelingDbContext>(stoppingToken);
+        await MigrateAsync<AppDbContext>(stoppingToken);
 
         logger.LogInformation("Database migrations completed");
         lifetime.StopApplication();

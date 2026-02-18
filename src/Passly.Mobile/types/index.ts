@@ -13,6 +13,7 @@ export interface CreateChatImportResponse {
 
 export interface ChatImportSummaryResponse {
   id: string;
+  submissionId: string;
   fileName: string;
   contentType: string;
   status: string;

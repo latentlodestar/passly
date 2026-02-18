@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Passly.Core.Modeling;
 
-public sealed class GetSubmissionsHandler(ModelingDbContext db)
+public sealed class GetSubmissionsHandler(AppDbContext db)
 {
     public async Task<IReadOnlyList<SubmissionResponse>> HandleAsync(
         string deviceId,

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Passly.Core.Modeling;
 
-public sealed class UpdateSubmissionStepHandler(ModelingDbContext db, IClock clock)
+public sealed class UpdateSubmissionStepHandler(AppDbContext db, IClock clock)
 {
     public async Task<SubmissionResponse?> HandleAsync(
         Guid id,

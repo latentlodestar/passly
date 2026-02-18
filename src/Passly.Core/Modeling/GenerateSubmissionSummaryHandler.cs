@@ -4,13 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
 using Passly.Persistence;
-using Passly.Persistence.Models.Modeling;
+using Passly.Persistence.Models;
 
 namespace Passly.Core.Modeling;
 
 public sealed class GenerateSubmissionSummaryHandler(
-    ModelingDbContext modelingDb,
-    IngestDbContext ingestDb,
+    AppDbContext db,
     IEncryptionService encryption,
     IEmbeddingService embeddings,
     IMessageCurator curator,
@@ -22,7 +21,7 @@ public sealed class GenerateSubmissionSummaryHandler(
         GenerateSubmissionSummaryRequest request,
         CancellationToken ct = default)
     {
-        var submission = await modelingDb.Submissions
+        var submission = await db.Submissions
             .Include(s => s.Summary)
             .FirstOrDefaultAsync(s => s.Id == submissionId && s.DeviceId == request.DeviceId, ct);
 
@@ -32,7 +31,7 @@ public sealed class GenerateSubmissionSummaryHandler(
         if (submission.Summary is not null)
             return (null, GenerateSubmissionSummaryError.SummaryAlreadyExists);
 
-        var import = await ingestDb.ChatImports
+        var import = await db.ChatImports
             .Where(c => c.Id == request.ChatImportId && c.DeviceId == request.DeviceId)
             .Select(c => new { c.Id, c.Status })
             .FirstOrDefaultAsync(ct);
@@ -43,8 +42,8 @@ public sealed class GenerateSubmissionSummaryHandler(
         if (import.Status != ChatImportStatus.Parsed)
             return (null, GenerateSubmissionSummaryError.ImportNotParsed);
 
-        // Decrypt messages — reuse pattern from GetRepresentativeMessagesHandler
-        var encryptedMessages = await ingestDb.ChatMessages
+        // Decrypt messages
+        var encryptedMessages = await db.ChatMessages
             .Where(m => m.ChatImportId == request.ChatImportId)
             .OrderBy(m => m.MessageIndex)
             .ToListAsync(ct);
@@ -104,8 +103,8 @@ public sealed class GenerateSubmissionSummaryHandler(
             CreatedAt = clock.UtcNow,
         };
 
-        modelingDb.SubmissionSummaries.Add(summary);
-        await modelingDb.SaveChangesAsync(ct);
+        db.SubmissionSummaries.Add(summary);
+        await db.SaveChangesAsync(ct);
 
         return (ToResponse(summary), null);
     }

@@ -1,11 +1,11 @@
 using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
 using Passly.Persistence;
-using Passly.Persistence.Models.Modeling;
+using Passly.Persistence.Models;
 
 namespace Passly.Core.Modeling;
 
-public sealed class CreateSubmissionHandler(ModelingDbContext db, IClock clock)
+public sealed class CreateSubmissionHandler(AppDbContext db, IClock clock)
 {
     public async Task<SubmissionResponse> HandleAsync(
         CreateSubmissionRequest request,

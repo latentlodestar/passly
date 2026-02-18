@@ -13,8 +13,7 @@ public static class DependencyInjection
     {
         AppendDbPasswordIfPresent(builder, connectionName);
 
-        builder.AddNpgsqlDbContext<IngestDbContext>(connectionName);
-        builder.AddNpgsqlDbContext<ModelingDbContext>(connectionName);
+        builder.AddNpgsqlDbContext<AppDbContext>(connectionName);
 
         builder.Services.AddScoped<IDbContextChecker, DbContextChecker>();
 
