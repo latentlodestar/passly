@@ -4,11 +4,13 @@ import type {
   SubmissionResponse,
   CreateSubmissionRequest,
   UpdateSubmissionStepRequest,
+  GenerateSubmissionSummaryRequest,
+  SubmissionSummaryResponse,
 } from "../types";
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: "" }),
-  tagTypes: ["Submissions"],
+  tagTypes: ["Submissions", "SubmissionSummary"],
   endpoints: (builder) => ({
     getStatus: builder.query<ApiStatusResponse, void>({
       query: () => "/api/status",
@@ -37,6 +39,29 @@ export const api = createApi({
       }),
       invalidatesTags: (_result, _err, { id }) => [{ type: "Submissions", id }],
     }),
+    generateSubmissionSummary: builder.mutation<
+      SubmissionSummaryResponse,
+      { id: string; body: GenerateSubmissionSummaryRequest }
+    >({
+      query: ({ id, body }) => ({
+        url: `/api/submissions/${id}/summary`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: "SubmissionSummary", id },
+      ],
+    }),
+    getSubmissionSummary: builder.query<
+      SubmissionSummaryResponse,
+      { id: string; deviceId: string }
+    >({
+      query: ({ id, deviceId }) =>
+        `/api/submissions/${id}/summary?deviceId=${encodeURIComponent(deviceId)}`,
+      providesTags: (_result, _err, { id }) => [
+        { type: "SubmissionSummary", id },
+      ],
+    }),
   }),
 });
 
@@ -46,4 +71,6 @@ export const {
   useGetSubmissionQuery,
   useCreateSubmissionMutation,
   useUpdateSubmissionStepMutation,
+  useGenerateSubmissionSummaryMutation,
+  useGetSubmissionSummaryQuery,
 } = api;

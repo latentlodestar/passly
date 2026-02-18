@@ -11,4 +11,6 @@ public sealed class Submission
     public SubmissionStep CurrentStep { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+
+    public SubmissionSummary? Summary { get; set; }
 }

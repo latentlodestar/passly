@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Passly.Persistence;
@@ -11,9 +12,11 @@ using Passly.Persistence;
 namespace Passly.Persistence.Migrations.Modeling
 {
     [DbContext(typeof(ModelingDbContext))]
-    partial class ModelingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260218141146_AddSubmissionSummaries")]
+    partial class AddSubmissionSummaries
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -7,13 +7,15 @@ import type {
   SubmissionResponse,
   CreateSubmissionRequest,
   UpdateSubmissionStepRequest,
+  GenerateSubmissionSummaryRequest,
+  SubmissionSummaryResponse,
 } from "../types";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:5192";
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: API_BASE_URL }),
-  tagTypes: ["Imports", "Submissions"],
+  tagTypes: ["Imports", "Submissions", "SubmissionSummary"],
   endpoints: (builder) => ({
     getStatus: builder.query<ApiStatusResponse, void>({
       query: () => "/api/status",
@@ -62,6 +64,29 @@ export const api = createApi({
       }),
       invalidatesTags: (_result, _err, { id }) => [{ type: "Submissions", id }],
     }),
+    generateSubmissionSummary: builder.mutation<
+      SubmissionSummaryResponse,
+      { id: string; body: GenerateSubmissionSummaryRequest }
+    >({
+      query: ({ id, body }) => ({
+        url: `/api/submissions/${id}/summary`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: "SubmissionSummary", id },
+      ],
+    }),
+    getSubmissionSummary: builder.query<
+      SubmissionSummaryResponse,
+      { id: string; deviceId: string }
+    >({
+      query: ({ id, deviceId }) =>
+        `/api/submissions/${id}/summary?deviceId=${encodeURIComponent(deviceId)}`,
+      providesTags: (_result, _err, { id }) => [
+        { type: "SubmissionSummary", id },
+      ],
+    }),
   }),
 });
 
@@ -74,4 +99,6 @@ export const {
   useGetSubmissionQuery,
   useCreateSubmissionMutation,
   useUpdateSubmissionStepMutation,
+  useGenerateSubmissionSummaryMutation,
+  useGetSubmissionSummaryQuery,
 } = api;

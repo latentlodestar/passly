@@ -17,7 +17,7 @@ import { SettingsFab } from '@/components/ui/AppHeader';
 const processSteps = [
   { label: 'Import evidence' },
   { label: 'Review' },
-  { label: 'Submit' },
+  { label: 'Summary' },
 ];
 
 interface ChecklistItem {

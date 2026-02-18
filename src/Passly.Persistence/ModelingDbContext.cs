@@ -6,6 +6,7 @@ namespace Passly.Persistence;
 public sealed class ModelingDbContext(DbContextOptions<ModelingDbContext> options) : DbContext(options)
 {
     public DbSet<Submission> Submissions => Set<Submission>();
+    public DbSet<SubmissionSummary> SubmissionSummaries => Set<SubmissionSummary>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

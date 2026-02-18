@@ -23,6 +23,10 @@ public static class DependencyInjection
         services.AddScoped<GetSubmissionsHandler>();
         services.AddScoped<GetSubmissionHandler>();
         services.AddScoped<UpdateSubmissionStepHandler>();
+        services.AddSingleton<ISummaryPdfGenerator, QuestPdfSummaryGenerator>();
+        services.AddScoped<GenerateSubmissionSummaryHandler>();
+        services.AddScoped<GetSubmissionSummaryHandler>();
+        services.AddScoped<GetSubmissionSummaryMetadataHandler>();
 
         // Embedding & curation
         services.AddSingleton<IEmbeddingService>(sp =>

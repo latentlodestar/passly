@@ -56,3 +56,19 @@ export interface ChatImportDetailResponse {
   updatedAt: string;
   messages: ChatMessageResponse[];
 }
+
+export interface GenerateSubmissionSummaryRequest {
+  deviceId: string;
+  passphrase: string;
+  chatImportId: string;
+}
+
+export interface SubmissionSummaryResponse {
+  id: string;
+  submissionId: string;
+  chatImportId: string;
+  totalMessages: number;
+  selectedMessages: number;
+  gapCount: number;
+  createdAt: string;
+}

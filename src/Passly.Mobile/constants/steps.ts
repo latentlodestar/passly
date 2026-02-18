@@ -1,7 +1,7 @@
 export const processSteps = [
   { label: 'Import evidence' },
   { label: 'Review' },
-  { label: 'Submit' },
+  { label: 'Summary' },
 ];
 
 const stepRouteMap: Record<string, string> = {
