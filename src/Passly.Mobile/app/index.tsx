@@ -5,14 +5,7 @@ import { useRouter } from 'expo-router';
 import { colors, spacing, fontSize, fontWeight } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Button } from '@/components/ui/Button';
-import { Stepper } from '@/components/ui/Stepper';
 import { SettingsFab } from '@/components/ui/AppHeader';
-
-const processSteps = [
-  { label: 'Get started' },
-  { label: 'Import evidence' },
-  { label: 'Review' },
-];
 
 export default function HomeScreen() {
   const scheme = useColorScheme() ?? 'light';
@@ -25,10 +18,6 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.stepperWrap}>
-          <Stepper steps={processSteps} currentStep={0} />
-        </View>
-
         <View style={styles.hero}>
           <Text style={[styles.heroTitle, { color: t.fg }]}>
             Prepare your immigration petition with confidence
@@ -66,9 +55,6 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     paddingTop: spacing['2xl'],
     gap: spacing['2xl'],
-  },
-  stepperWrap: {
-    paddingHorizontal: spacing.sm,
   },
   hero: {
     alignItems: 'center',

@@ -1,27 +1,36 @@
-import { ScrollView, StyleSheet, Text, View, Pressable, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+  Modal,
+  ActivityIndicator,
+  Platform,
+  Alert,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useEffect, useCallback, useState, useRef } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
 import { useShareIntent } from 'expo-share-intent';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { reportStep } from '@/store/progress-slice';
 import { useDeviceId } from '@/hooks/use-device-id';
 import { usePassphrase } from '@/hooks/use-passphrase';
 import { useGetChatImportsQuery, useUploadChatExportMutation } from '@/api/api';
 import { Button } from '@/components/ui/Button';
-import { Card, CardBody } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Alert } from '@/components/ui/Alert';
-import { Stepper, ProgressBar } from '@/components/ui/Stepper';
-import { SettingsFab } from '@/components/ui/AppHeader';
+import { Stepper } from '@/components/ui/Stepper';
 import type { ChatImportSummaryResponse } from '@/types';
 
 const processSteps = [
-  { label: 'Get started' },
   { label: 'Import evidence' },
   { label: 'Review' },
+  { label: 'Submit' },
 ];
 
 type LocalUpload = {
@@ -30,31 +39,232 @@ type LocalUpload = {
   error?: string;
 };
 
-function statusToBadge(status: string): { variant: 'success' | 'danger' | 'warning'; label: string } {
+type FileItem = {
+  id: string;
+  name: string;
+  status: 'uploading' | 'processing' | 'processed' | 'failed';
+  error?: string;
+  isLocal: boolean;
+};
+
+function mapServerStatus(status: string): FileItem['status'] {
   switch (status) {
-    case 'Parsed':
-      return { variant: 'success', label: 'Processed' };
-    case 'Failed':
-      return { variant: 'danger', label: 'Error' };
-    default:
-      return { variant: 'warning', label: 'Processing' };
+    case 'Parsed': return 'processed';
+    case 'Failed': return 'failed';
+    default: return 'processing';
   }
 }
+
+function mapLocalStatus(status: LocalUpload['status']): FileItem['status'] {
+  switch (status) {
+    case 'uploading': return 'uploading';
+    case 'success': return 'processing';
+    case 'error': return 'failed';
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  BottomSheet                                                        */
+/* ------------------------------------------------------------------ */
+
+function BottomSheet({
+  visible,
+  onClose,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const scheme = useColorScheme() ?? 'light';
+  const t = colors[scheme];
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={sheetStyles.overlay}>
+        <Pressable style={sheetStyles.backdrop} onPress={onClose} />
+        <View
+          style={[
+            sheetStyles.content,
+            {
+              backgroundColor: t.surface,
+              paddingBottom: insets.bottom + spacing.lg,
+            },
+          ]}
+        >
+          <View style={[sheetStyles.handle, { backgroundColor: t.borderStrong }]} />
+          {children}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const sheetStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  backdrop: {
+    flex: 1,
+  },
+  content: {
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+  },
+});
+
+/* ------------------------------------------------------------------ */
+/*  FileRow                                                            */
+/* ------------------------------------------------------------------ */
+
+function FileRow({
+  file,
+  borderColor,
+  onDelete,
+  onPress,
+}: {
+  file: FileItem;
+  borderColor: string;
+  onDelete: () => void;
+  onPress?: () => void;
+}) {
+  const scheme = useColorScheme() ?? 'light';
+  const t = colors[scheme];
+
+  const isProcessed = file.status === 'processed';
+  const isFailed = file.status === 'failed';
+  const isInProgress = file.status === 'uploading' || file.status === 'processing';
+
+  const statusLabel = file.status === 'uploading' ? 'Uploading\u2026' : 'Processing\u2026';
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      style={({ pressed }) => [
+        rowStyles.row,
+        { borderBottomColor: borderColor },
+        pressed && onPress ? { opacity: 0.7 } : null,
+      ]}
+    >
+      {/* Left status icon */}
+      {isInProgress ? (
+        <ActivityIndicator
+          size={18}
+          color={file.status === 'uploading' ? t.muted : t.warningText}
+          style={rowStyles.statusIcon}
+        />
+      ) : (
+        <MaterialIcons
+          name={isProcessed ? 'check-circle' : 'error'}
+          size={20}
+          color={isProcessed ? t.successText : t.dangerText}
+          style={[rowStyles.statusIcon, isProcessed && rowStyles.iconSettled]}
+        />
+      )}
+
+      {/* Content */}
+      <View style={rowStyles.content}>
+        <Text
+          style={[rowStyles.name, { color: isProcessed ? t.muted : t.fg }]}
+          numberOfLines={1}
+        >
+          {file.name}
+        </Text>
+        {isInProgress && (
+          <Text style={[rowStyles.subtitle, { color: t.muted }]}>
+            {statusLabel}
+          </Text>
+        )}
+        {isFailed && file.error && (
+          <Text style={[rowStyles.subtitle, { color: t.dangerText }]} numberOfLines={1}>
+            {file.error}
+          </Text>
+        )}
+      </View>
+
+      {/* Right affordance */}
+      {isProcessed && (
+        <MaterialIcons name="chevron-right" size={20} color={t.muted} />
+      )}
+      {isFailed && (
+        <Pressable onPress={onDelete} hitSlop={12} style={rowStyles.deleteBtn}>
+          <MaterialIcons name="close" size={18} color={t.muted} />
+        </Pressable>
+      )}
+    </Pressable>
+  );
+}
+
+const rowStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: spacing.md,
+  },
+  statusIcon: {
+    width: 20,
+  },
+  iconSettled: {
+    opacity: 0.5,
+  },
+  content: {
+    flex: 1,
+    gap: 2,
+  },
+  name: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  subtitle: {
+    fontSize: fontSize.xs,
+    lineHeight: 16,
+  },
+  deleteBtn: {
+    padding: spacing.xs,
+  },
+});
+
+/* ------------------------------------------------------------------ */
+/*  Main Screen                                                        */
+/* ------------------------------------------------------------------ */
 
 export default function EvidenceScreen() {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
+  const maxReachedStep = useAppSelector((s) => s.progress.maxReachedStep);
+
+  useEffect(() => { dispatch(reportStep(0)); }, [dispatch]);
 
   const deviceId = useDeviceId();
   const { passphrase, isLoaded: passphraseLoaded } = usePassphrase();
   const [shouldPoll, setShouldPoll] = useState(false);
-  const { data: imports = [], isLoading } = useGetChatImportsQuery(deviceId ?? '', {
+  const { data: imports = [] } = useGetChatImportsQuery(deviceId ?? '', {
     skip: !deviceId,
     pollingInterval: shouldPoll ? 3000 : 0,
   });
   const [uploadChatExport] = useUploadChatExportMutation();
   const [localUploads, setLocalUploads] = useState<Record<string, LocalUpload>>({});
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [howToVisible, setHowToVisible] = useState(false);
 
   useEffect(() => {
     const hasInProgress = imports.some(
@@ -62,9 +272,11 @@ export default function EvidenceScreen() {
     );
     setShouldPoll(hasInProgress);
   }, [imports]);
-  const [dragActive, setDragActive] = useState(false);
-  const dropRef = useRef<View>(null);
+
+  const containerRef = useRef<View>(null);
   const { shareIntent, resetShareIntent } = useShareIntent();
+
+  /* ---- Upload ---- */
 
   const uploadFile = useCallback(async (fileUri: string, fileName: string, mimeType: string) => {
     if (!deviceId || !passphrase) return;
@@ -80,7 +292,6 @@ export default function EvidenceScreen() {
         const blob = await response.blob();
         formData.append('file', blob, fileName);
       } else {
-        // React Native FormData expects { uri, name, type } for files
         formData.append('file', { uri: fileUri, name: fileName, type: mimeType } as unknown as Blob);
       }
 
@@ -106,6 +317,8 @@ export default function EvidenceScreen() {
     }
   }, [deviceId, passphrase, uploadChatExport]);
 
+  /* ---- Share intent ---- */
+
   useEffect(() => {
     if (shareIntent?.files?.length) {
       for (const file of shareIntent.files) {
@@ -114,6 +327,8 @@ export default function EvidenceScreen() {
       resetShareIntent();
     }
   }, [shareIntent, uploadFile, resetShareIntent]);
+
+  /* ---- Web drag-and-drop (invisible, on container) ---- */
 
   const handleDrop = useCallback(async (files: FileList) => {
     if (!passphrase) {
@@ -128,30 +343,28 @@ export default function EvidenceScreen() {
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
-    const el = dropRef.current as unknown as HTMLElement | null;
+    const el = containerRef.current as unknown as HTMLElement | null;
     if (!el) return;
 
-    const onDragOver = (e: DragEvent) => { e.preventDefault(); setDragActive(true); };
-    const onDragLeave = () => setDragActive(false);
+    const onDragOver = (e: DragEvent) => { e.preventDefault(); };
     const onDrop = (e: DragEvent) => {
       e.preventDefault();
-      setDragActive(false);
       if (e.dataTransfer?.files.length) handleDrop(e.dataTransfer.files);
     };
 
     el.addEventListener('dragover', onDragOver);
-    el.addEventListener('dragleave', onDragLeave);
     el.addEventListener('drop', onDrop);
     return () => {
       el.removeEventListener('dragover', onDragOver);
-      el.removeEventListener('dragleave', onDragLeave);
       el.removeEventListener('drop', onDrop);
     };
   }, [handleDrop]);
 
-  const handlePickFile = async () => {
+  /* ---- File picking ---- */
+
+  const pickFile = useCallback(async (types: string[]) => {
     const result = await DocumentPicker.getDocumentAsync({
-      type: ['text/plain', 'application/zip'],
+      type: types,
       copyToCacheDirectory: true,
     });
 
@@ -164,139 +377,232 @@ export default function EvidenceScreen() {
 
     const asset = result.assets[0];
     await uploadFile(asset.uri, asset.name, asset.mimeType ?? 'text/plain');
+  }, [passphrase, router, uploadFile]);
+
+  const closeSheetAndPick = (types: string[]) => {
+    setSheetVisible(false);
+    setTimeout(() => pickFile(types), 400);
   };
 
-  // Remove local uploads once the server knows about them (match by fileName)
-  const serverFileNames = new Set(imports.map((imp: ChatImportSummaryResponse) => imp.fileName));
+  const openHowTo = () => {
+    setSheetVisible(false);
+    setTimeout(() => setHowToVisible(true), 400);
+  };
 
-  const localBadge = (u: LocalUpload): { variant: 'success' | 'danger' | 'warning'; label: string } => {
-    switch (u.status) {
-      case 'uploading': return { variant: 'warning', label: 'Uploading' };
-      case 'success':   return { variant: 'warning', label: 'Processing' };
-      case 'error':     return { variant: 'danger',  label: 'Error' };
+  /* ---- Delete ---- */
+
+  const handleDelete = (file: FileItem) => {
+    if (file.isLocal) {
+      setLocalUploads((prev) => {
+        const next = { ...prev };
+        delete next[file.id];
+        return next;
+      });
+    } else {
+      setDeletedIds((prev) => new Set(prev).add(file.id));
     }
   };
 
-  const allFiles: { id: string; name: string; badge: { variant: 'success' | 'danger' | 'warning'; label: string }; error?: string }[] = [
-    ...imports.map((imp: ChatImportSummaryResponse) => ({
-      id: imp.id,
-      name: imp.fileName,
-      badge: statusToBadge(imp.status),
-    })),
+  /* ---- FAB ---- */
+
+  const handleFabPress = () => {
+    if (!passphraseLoaded) return;
+    if (!passphrase) {
+      router.push('/settings');
+      return;
+    }
+    setSheetVisible(true);
+  };
+
+  /* ---- Derived state ---- */
+
+  const serverFileNames = new Set(imports.map((imp: ChatImportSummaryResponse) => imp.fileName));
+
+  const allFiles: FileItem[] = [
+    ...imports
+      .filter((imp: ChatImportSummaryResponse) => !deletedIds.has(imp.id))
+      .map((imp: ChatImportSummaryResponse) => ({
+        id: imp.id,
+        name: imp.fileName,
+        status: mapServerStatus(imp.status),
+        isLocal: false,
+      })),
     ...Object.entries(localUploads)
       .filter(([, u]) => !serverFileNames.has(u.fileName))
       .map(([key, u]) => ({
         id: key,
         name: u.fileName,
-        badge: localBadge(u),
+        status: mapLocalStatus(u.status),
         error: u.error,
+        isLocal: true,
       })),
   ];
 
-  const doneCount = imports.filter((f: ChatImportSummaryResponse) => f.status === 'Parsed').length;
+  const doneCount = imports.filter(
+    (f: ChatImportSummaryResponse) => f.status === 'Parsed' && !deletedIds.has(f.id)
+  ).length;
+  const canContinue = doneCount > 0;
   const noPassphrase = passphraseLoaded && !passphrase;
 
+  /* ---- Render ---- */
+
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.stepperWrap}>
-          <Stepper steps={processSteps} currentStep={1} />
-        </View>
+    <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top', 'left', 'right']}>
+      <View ref={containerRef as React.Ref<View>} style={styles.container}>
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingBottom: 80 + insets.bottom }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.stepperWrap}>
+            <Stepper
+              steps={processSteps}
+              currentStep={0}
+              maxReachedStep={maxReachedStep}
+              onStepPress={(i) => {
+                const routes = ['/evidence', '/checklist', '/submit'] as const;
+                router.push(routes[i]);
+              }}
+            />
+          </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.title, { color: t.fg }]}>Import evidence</Text>
-          <Text style={[styles.subtitle, { color: t.fg2 }]}>
-            Upload WhatsApp chat exports to analyze your communication timeline.
-          </Text>
-        </View>
+          {noPassphrase && (
+            <Pressable onPress={() => router.push('/settings')} style={styles.warningRow}>
+              <MaterialIcons name="lock-outline" size={16} color={t.warning} />
+              <Text style={[styles.warningText, { color: t.fg2 }]}>
+                Set up a passphrase in{' '}
+                <Text style={{ color: t.primary }}>Settings</Text>
+                {' '}to start uploading.
+              </Text>
+            </Pressable>
+          )}
 
-        {noPassphrase && (
-          <Alert variant="warning">
-            Set an encryption passphrase in Settings before uploading files.
-          </Alert>
-        )}
+          {allFiles.length === 0 ? (
+            <View style={styles.emptyState}>
+              <MaterialIcons name="chat-bubble-outline" size={40} color={t.border} />
+              <Text style={[styles.emptyTitle, { color: t.fg }]}>No files yet</Text>
+              <Text style={[styles.emptySubtitle, { color: t.muted }]}>
+                Tap{' '}
+                <Text style={{ color: t.primary, fontWeight: fontWeight.semibold }}>+</Text>
+                {' '}to add a chat export.
+              </Text>
+            </View>
+          ) : (
+            <View>
+              {allFiles.map((file, index) => (
+                <FileRow
+                  key={file.id}
+                  file={file}
+                  borderColor={index < allFiles.length - 1 ? t.border : 'transparent'}
+                  onDelete={() => handleDelete(file)}
+                  onPress={
+                    file.status === 'processed'
+                      ? () => {
+                          // TODO: navigate to document detail
+                        }
+                      : file.status === 'failed'
+                        ? () => Alert.alert('Upload error', file.error ?? 'An unknown error occurred.')
+                        : undefined
+                  }
+                />
+              ))}
+            </View>
+          )}
+        </ScrollView>
 
-        <Alert variant="info">
-          To export a WhatsApp chat: open the chat, tap the contact name, select
-          "Export Chat," then choose "Without Media."
-        </Alert>
-
-        <Pressable
-          ref={dropRef as React.Ref<View>}
-          onPress={handlePickFile}
+        {/* Sticky bottom bar */}
+        <View
           style={[
-            styles.uploadArea,
-            { borderColor: dragActive ? t.primary : t.borderStrong, backgroundColor: dragActive ? t.primaryMuted : t.surface },
+            styles.bottomBar,
+            {
+              backgroundColor: t.bg,
+              borderTopColor: t.border,
+              paddingBottom: insets.bottom + spacing.base,
+            },
           ]}
         >
-          <Text style={styles.uploadIcon}>{'\u{1F4C1}'}</Text>
-          <Text style={[styles.uploadTitle, { color: t.fg }]}>
-            {dragActive ? 'Drop files here' : 'Tap or drop chat files here'}
-          </Text>
-          <Text style={[styles.uploadHint, { color: t.muted }]}>
-            Accepts .txt and .zip files
+          <View style={styles.bottomRow}>
+            <Button
+              label="Add evidence"
+              variant="secondary"
+              onPress={handleFabPress}
+              style={styles.bottomRowBtn}
+            />
+            <Button
+              label="Continue"
+              disabled={!canContinue}
+              onPress={() => router.push('/checklist')}
+              style={styles.bottomRowBtn}
+            />
+          </View>
+          <Button
+            label="Save and exit"
+            variant="ghost"
+            onPress={() => router.replace('/')}
+          />
+        </View>
+      </View>
+
+      {/* Add evidence sheet */}
+      <BottomSheet visible={sheetVisible} onClose={() => setSheetVisible(false)}>
+        <Text style={[styles.sheetTitle, { color: t.fg }]}>Add evidence</Text>
+
+        <Pressable
+          style={({ pressed }) => [styles.sheetOption, { opacity: pressed ? 0.7 : 1 }]}
+          onPress={() => closeSheetAndPick(['text/plain'])}
+        >
+          <MaterialIcons name="description" size={22} color={t.primary} />
+          <Text style={[styles.sheetOptionLabel, { color: t.fg }]}>
+            WhatsApp export (.txt)
           </Text>
         </Pressable>
 
-        {allFiles.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: t.fg }]}>
-                Uploaded files
-              </Text>
-              <Text style={[styles.sectionMeta, { color: t.muted }]}>
-                {doneCount} of {imports.length} processed
-              </Text>
-            </View>
+        <Pressable
+          style={({ pressed }) => [styles.sheetOption, { opacity: pressed ? 0.7 : 1 }]}
+          onPress={() => closeSheetAndPick(['application/zip'])}
+        >
+          <MaterialIcons name="folder-zip" size={22} color={t.primary} />
+          <Text style={[styles.sheetOptionLabel, { color: t.fg }]}>
+            ZIP archive (.zip)
+          </Text>
+        </Pressable>
 
-            {imports.length > 0 && (
-              <ProgressBar
-                value={doneCount}
-                max={imports.length}
-                variant={doneCount === imports.length ? 'success' : 'primary'}
-              />
-            )}
+        <Pressable onPress={openHowTo} style={styles.sheetLink}>
+          <Text style={[styles.sheetLinkText, { color: t.primary }]}>
+            How to export from WhatsApp
+          </Text>
+        </Pressable>
+      </BottomSheet>
 
-            {allFiles.map((file) => (
-              <Card key={file.id}>
-                <CardBody>
-                  <View style={styles.fileRow}>
-                    <View style={styles.fileInfo}>
-                      <Text style={[styles.fileName, { color: t.fg }]}>
-                        {file.name}
-                      </Text>
-                      {file.error && (
-                        <Text style={[styles.fileMeta, { color: t.danger }]}>
-                          {file.error}
-                        </Text>
-                      )}
-                    </View>
-                    <Badge variant={file.badge.variant}>
-                      {file.badge.label}
-                    </Badge>
-                  </View>
-                </CardBody>
-              </Card>
-            ))}
+      {/* How to export sheet */}
+      <BottomSheet visible={howToVisible} onClose={() => setHowToVisible(false)}>
+        <Text style={[styles.sheetTitle, { color: t.fg }]}>Export from WhatsApp</Text>
 
-            <Button
-              label="Continue to review"
-              disabled={doneCount < imports.length || imports.length === 0}
-              onPress={() => router.push('/checklist')}
-            />
+        {[
+          'Open the chat in WhatsApp',
+          'Tap the contact name at the top',
+          'Scroll down and tap "Export Chat"',
+          'Choose "Without Media"',
+          'Save or share the .txt file',
+        ].map((step, i) => (
+          <View key={i} style={styles.instructionRow}>
+            <Text style={[styles.instructionNum, { color: t.primary }]}>{i + 1}</Text>
+            <Text style={[styles.instructionText, { color: t.fg2 }]}>{step}</Text>
           </View>
-        )}
-      </ScrollView>
-      <SettingsFab />
+        ))}
+      </BottomSheet>
     </SafeAreaView>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Styles                                                             */
+/* ------------------------------------------------------------------ */
+
 const styles = StyleSheet.create({
   safe: {
+    flex: 1,
+  },
+  container: {
     flex: 1,
   },
   scroll: {
@@ -306,65 +612,96 @@ const styles = StyleSheet.create({
   },
   stepperWrap: {
     paddingHorizontal: spacing.sm,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
-  section: {
-    gap: spacing.md,
-  },
-  sectionHeader: {
+
+  /* Passphrase warning */
+  warningRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  title: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-  },
-  subtitle: {
-    fontSize: fontSize.base,
-    lineHeight: 24,
-  },
-  sectionTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-  },
-  sectionMeta: {
-    fontSize: fontSize.sm,
-  },
-  uploadArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing['3xl'],
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderRadius: radius.lg,
     gap: spacing.sm,
   },
-  uploadIcon: {
-    fontSize: 32,
+  warningText: {
+    flex: 1,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
   },
-  uploadTitle: {
+
+  /* Empty state */
+  emptyState: {
+    alignItems: 'center',
+    paddingTop: spacing['5xl'],
+    gap: spacing.sm,
+  },
+  emptyTitle: {
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
+    marginTop: spacing.sm,
   },
-  uploadHint: {
+  emptySubtitle: {
     fontSize: fontSize.sm,
   },
-  fileRow: {
+
+  /* Sticky bottom bar */
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+
+  bottomRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  bottomRowBtn: {
+    flex: 1,
+  },
+
+  /* Sheet copy */
+  sheetTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    marginBottom: spacing.lg,
+  },
+  sheetOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
   },
-  fileInfo: {
-    flex: 1,
-    marginRight: spacing.md,
+  sheetOptionLabel: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
   },
-  fileName: {
+  sheetLink: {
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  sheetLinkText: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
   },
-  fileMeta: {
-    fontSize: fontSize.xs,
-    marginTop: 2,
+
+  /* Instructions */
+  instructionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  instructionNum: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    width: 20,
+    textAlign: 'center',
+  },
+  instructionText: {
+    flex: 1,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
   },
 });

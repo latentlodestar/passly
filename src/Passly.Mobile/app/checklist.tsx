@@ -1,18 +1,22 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { useRouter } from 'expo-router';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, spacing, fontSize, fontWeight } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Card, CardHeader, CardBody } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Alert } from '@/components/ui/Alert';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { reportStep } from '@/store/progress-slice';
+import { Button } from '@/components/ui/Button';
 import { Stepper, ProgressBar } from '@/components/ui/Stepper';
 import { SettingsFab } from '@/components/ui/AppHeader';
 
 const processSteps = [
-  { label: 'Get started' },
   { label: 'Import evidence' },
   { label: 'Review' },
+  { label: 'Submit' },
 ];
 
 interface ChecklistItem {
@@ -73,138 +77,143 @@ const checklistItems: ChecklistItem[] = [
   },
 ];
 
-function statusIcon(status: ChecklistItem['status']) {
-  switch (status) {
-    case 'complete':
-      return '\u2713';
-    case 'weak':
-      return '\u26A0';
-    case 'missing':
-      return '\u25CB';
-  }
-}
+type Theme = (typeof colors)[keyof typeof colors];
 
-function badgeVariant(status: ChecklistItem['status']): 'success' | 'warning' | 'danger' {
+function statusIcon(status: ChecklistItem['status']): { name: keyof typeof MaterialIcons.glyphMap; color: (t: Theme) => string } {
   switch (status) {
     case 'complete':
-      return 'success';
+      return { name: 'check-circle', color: (t) => t.successText };
     case 'weak':
-      return 'warning';
+      return { name: 'error-outline', color: (t) => t.warningText };
     case 'missing':
-      return 'danger';
-  }
-}
-
-function badgeLabel(status: ChecklistItem['status']) {
-  switch (status) {
-    case 'complete':
-      return 'Complete';
-    case 'weak':
-      return 'Needs more';
-    case 'missing':
-      return 'Missing';
+      return { name: 'radio-button-unchecked', color: (t) => t.dangerText };
   }
 }
 
 export default function ChecklistScreen() {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
+  const maxReachedStep = useAppSelector((s) => s.progress.maxReachedStep);
+
+  useEffect(() => { dispatch(reportStep(1)); }, [dispatch]);
 
   const completed = checklistItems.filter((i) => i.status === 'complete').length;
   const total = checklistItems.length;
-  const pct = Math.round((completed / total) * 100);
+  const attentionCount = total - completed;
 
-  const missingCount = checklistItems.filter((i) => i.status === 'missing').length;
-  const weakCount = checklistItems.filter((i) => i.status === 'weak').length;
+  // Sort: attention items first (missing, then weak), completed last
+  const sortedItems = [...checklistItems].sort((a, b) => {
+    const order = { missing: 0, weak: 1, complete: 2 };
+    return order[a.status] - order[b.status];
+  });
+
+  const allComplete = attentionCount === 0;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top', 'left', 'right']}>
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[styles.scroll, { paddingBottom: 80 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.stepperWrap}>
-          <Stepper steps={processSteps} currentStep={2} />
+          <Stepper steps={processSteps} currentStep={1} maxReachedStep={maxReachedStep} onStepPress={(i) => {
+            const routes = ['/evidence', '/checklist', '/submit'] as const;
+            router.push(routes[i]);
+          }} />
         </View>
 
-        <Card>
-          <CardBody>
-            <View style={styles.readiness}>
-              <Text style={[styles.readinessScore, { color: t.fg }]}>
-                {pct}%
-              </Text>
-              <Text style={[styles.readinessLabel, { color: t.fg2 }]}>
-                OVERALL READINESS
-              </Text>
-              <ProgressBar
-                value={completed}
-                max={total}
-                variant={pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'danger'}
-              />
+        {/* Compact status summary */}
+        <View style={styles.summary}>
+          <Text style={[styles.summaryText, { color: t.fg }]}>
+            {allComplete
+              ? 'All items complete'
+              : `${attentionCount} item${attentionCount !== 1 ? 's' : ''} need${attentionCount === 1 ? 's' : ''} attention`}
+          </Text>
+          <View style={styles.progressRow}>
+            <View style={styles.progressBarWrap}>
+              <ProgressBar value={completed} max={total} variant={allComplete ? 'success' : 'primary'} />
             </View>
-          </CardBody>
-        </Card>
+            <Text style={[styles.progressLabel, { color: t.muted }]}>
+              {Math.round((completed / total) * 100)}%
+            </Text>
+          </View>
+        </View>
 
-        {(missingCount > 0 || weakCount > 0) && (
-          <Alert variant="warning" title="Items need attention">
-            {`${missingCount > 0 ? `${missingCount} item${missingCount !== 1 ? 's' : ''} missing. ` : ''}${weakCount > 0 ? `${weakCount} item${weakCount !== 1 ? 's' : ''} could be strengthened.` : ''}`}
-          </Alert>
-        )}
+        {/* Checklist */}
+        <View>
+          {sortedItems.map((item, index) => {
+            const icon = statusIcon(item.status);
+            const isComplete = item.status === 'complete';
 
-        <Card>
-          <CardHeader>Checklist</CardHeader>
-          <View>
-            {checklistItems.map((item, index) => (
-              <View
+            return (
+              <Pressable
                 key={item.id}
-                style={[
-                  styles.checkItem,
-                  {
-                    borderBottomColor: t.border,
-                    borderBottomWidth:
-                      index < checklistItems.length - 1 ? 1 : 0,
-                  },
+                style={({ pressed }) => [
+                  styles.row,
+                  { borderBottomColor: index < sortedItems.length - 1 ? t.border : 'transparent' },
+                  pressed ? { opacity: 0.7 } : null,
                 ]}
+                onPress={() => {
+                  // Navigate to resolve this item
+                }}
+                disabled={isComplete}
               >
-                <Text
-                  style={[
-                    styles.checkIcon,
-                    {
-                      color:
-                        item.status === 'complete'
-                          ? t.successText
-                          : item.status === 'weak'
-                            ? t.warningText
-                            : t.muted,
-                    },
-                  ]}
-                >
-                  {statusIcon(item.status)}
-                </Text>
-                <View style={styles.checkContent}>
+                <MaterialIcons
+                  name={icon.name}
+                  size={20}
+                  color={icon.color(t)}
+                  style={isComplete ? styles.iconSettled : undefined}
+                />
+                <View style={styles.rowContent}>
                   <Text
                     style={[
-                      styles.checkLabel,
-                      {
-                        color:
-                          item.status === 'complete' ? t.fg2 : t.fg,
-                      },
+                      styles.rowLabel,
+                      { color: isComplete ? t.muted : t.fg },
                     ]}
                   >
                     {item.label}
                   </Text>
-                  <Text style={[styles.checkDesc, { color: t.muted }]}>
-                    {item.description}
-                  </Text>
+                  {!isComplete && (
+                    <Text style={[styles.rowDesc, { color: t.muted }]}>
+                      {item.description}
+                    </Text>
+                  )}
                 </View>
-                <Badge variant={badgeVariant(item.status)}>
-                  {badgeLabel(item.status)}
-                </Badge>
-              </View>
-            ))}
-          </View>
-        </Card>
+                {!isComplete && (
+                  <MaterialIcons name="chevron-right" size={20} color={t.muted} />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
       </ScrollView>
+
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            backgroundColor: t.bg,
+            borderTopColor: t.border,
+            paddingBottom: insets.bottom + spacing.base,
+          },
+        ]}
+      >
+        <View style={styles.bottomRow}>
+          <Button
+            label="Continue"
+            onPress={() => router.push('/submit')}
+            style={styles.bottomRowBtn}
+          />
+        </View>
+        <Button
+          label="Save and exit"
+          variant="ghost"
+          onPress={() => router.replace('/')}
+        />
+      </View>
       <SettingsFab />
     </SafeAreaView>
   );
@@ -221,46 +230,71 @@ const styles = StyleSheet.create({
   },
   stepperWrap: {
     paddingHorizontal: spacing.sm,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
-  readiness: {
-    alignItems: 'center',
+
+  /* Status summary */
+  summary: {
     gap: spacing.sm,
-    paddingVertical: spacing.base,
   },
-  readinessScore: {
-    fontSize: 48,
-    fontWeight: fontWeight.bold,
-    lineHeight: 48,
+  summaryText: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
   },
-  readinessLabel: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-    letterSpacing: 0.5,
-    marginBottom: spacing.sm,
-  },
-  checkItem: {
+  progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.base,
+    gap: spacing.sm,
+  },
+  progressBarWrap: {
+    flex: 1,
+  },
+  progressLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    minWidth: 28,
+    textAlign: 'right',
+  },
+
+  /* Checklist rows */
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     gap: spacing.md,
   },
-  checkIcon: {
-    fontSize: 16,
-    width: 20,
-    textAlign: 'center',
+  iconSettled: {
+    opacity: 0.5,
   },
-  checkContent: {
+  rowContent: {
     flex: 1,
     gap: 2,
   },
-  checkLabel: {
+  rowLabel: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
   },
-  checkDesc: {
+  rowDesc: {
     fontSize: fontSize.xs,
     lineHeight: 16,
+  },
+
+  /* Bottom bar */
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  bottomRowBtn: {
+    flex: 1,
   },
 });

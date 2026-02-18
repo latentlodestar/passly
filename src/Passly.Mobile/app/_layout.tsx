@@ -18,6 +18,7 @@ function RootNavigator() {
         <Stack.Screen name="index" />
         <Stack.Screen name="evidence" />
         <Stack.Screen name="checklist" />
+        <Stack.Screen name="submit" />
         <Stack.Screen
           name="settings"
           options={{ presentation: 'modal' }}

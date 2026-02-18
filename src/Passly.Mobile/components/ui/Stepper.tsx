@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, spacing, radius, fontSize, fontWeight } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -9,18 +9,23 @@ interface Step {
 interface StepperProps {
   steps: Step[];
   currentStep: number;
+  maxReachedStep?: number;
+  onStepPress?: (stepIndex: number) => void;
 }
 
-export function Stepper({ steps, currentStep }: StepperProps) {
+export function Stepper({ steps, currentStep, maxReachedStep, onStepPress }: StepperProps) {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
+  const reachable = maxReachedStep ?? currentStep;
 
   const items: React.ReactNode[] = [];
   steps.forEach((step, index) => {
     const isCompleted = index < currentStep;
     const isCurrent = index === currentStep;
+    const isReached = index <= reachable;
+    const isTappable = onStepPress && isReached && !isCurrent;
 
-    items.push(
+    const stepContent = (
       <View key={`step-${index}`} style={styles.step}>
         <View
           style={[
@@ -62,8 +67,18 @@ export function Stepper({ steps, currentStep }: StepperProps) {
         >
           {step.label}
         </Text>
-      </View>,
+      </View>
     );
+
+    if (isTappable) {
+      items.push(
+        <Pressable key={`step-${index}`} onPress={() => onStepPress(index)} hitSlop={8}>
+          {stepContent}
+        </Pressable>,
+      );
+    } else {
+      items.push(stepContent);
+    }
 
     if (index < steps.length - 1) {
       items.push(
