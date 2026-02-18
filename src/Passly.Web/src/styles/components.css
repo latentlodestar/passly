@@ -1617,3 +1617,42 @@
   font-size: var(--text-sm);
   color: var(--fg-2);
 }
+
+/* ----------------------------------------------------------------
+   SUBMISSION LIST
+   ---------------------------------------------------------------- */
+
+.submission-list {
+  @apply flex flex-col;
+  gap: var(--space-2);
+}
+
+.submission-list__item {
+  @apply flex items-center justify-between gap-4;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: border-color 150ms;
+}
+
+.submission-list__item--active {
+  border-color: var(--primary);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.submission-list__info {
+  @apply flex-1;
+  min-width: 0;
+}
+
+.submission-list__label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.submission-list__meta {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}

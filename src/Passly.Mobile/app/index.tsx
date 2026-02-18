@@ -3,7 +3,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { colors, spacing, fontSize, fontWeight } from '@/constants/design-tokens';
+import { stepToRoute } from '@/constants/steps';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useDeviceId } from '@/hooks/use-device-id';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { setActiveSubmission } from '@/store/active-submission-slice';
+import {
+  useCreateSubmissionMutation,
+  useGetSubmissionQuery,
+} from '@/api/api';
 import { Button } from '@/components/ui/Button';
 import { SettingsFab } from '@/components/ui/AppHeader';
 
@@ -11,6 +19,33 @@ export default function HomeScreen() {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const deviceId = useDeviceId();
+  const activeId = useAppSelector((s) => s.activeSubmission.id);
+
+  const [createSubmission, { isLoading: isCreating }] =
+    useCreateSubmissionMutation();
+
+  const { data: activeSubmission } = useGetSubmissionQuery(
+    { id: activeId!, deviceId: deviceId! },
+    { skip: !activeId || !deviceId },
+  );
+
+  const handleCreate = async () => {
+    if (!deviceId) return;
+    const result = await createSubmission({
+      deviceId,
+      label: `Petition ${new Date().toLocaleDateString()}`,
+    }).unwrap();
+    dispatch(setActiveSubmission(result.id));
+    router.push('/evidence');
+  };
+
+  const handleResume = () => {
+    if (activeSubmission) {
+      router.push(stepToRoute(activeSubmission.currentStep) as '/evidence');
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]}>
@@ -29,16 +64,19 @@ export default function HomeScreen() {
 
           <View style={styles.actions}>
             <Button
-              label="Begin preparation"
+              label={isCreating ? 'Creating...' : 'Create submission'}
               size="lg"
-              onPress={() => router.push('/evidence')}
+              onPress={handleCreate}
+              disabled={isCreating || !deviceId}
             />
-            <Button
-              label="View checklist"
-              variant="secondary"
-              size="lg"
-              onPress={() => router.push('/checklist')}
-            />
+            {activeSubmission && (
+              <Button
+                label="Resume submission"
+                variant="secondary"
+                size="lg"
+                onPress={handleResume}
+              />
+            )}
           </View>
         </View>
       </ScrollView>

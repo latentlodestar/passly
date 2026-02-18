@@ -22,6 +22,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { reportStep } from '@/store/progress-slice';
 import { useDeviceId } from '@/hooks/use-device-id';
 import { usePassphrase } from '@/hooks/use-passphrase';
+import { useStepSync } from '@/hooks/use-step-sync';
 import { useGetChatImportsQuery, useUploadChatExportMutation } from '@/api/api';
 import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
@@ -252,6 +253,7 @@ export default function EvidenceScreen() {
   const maxReachedStep = useAppSelector((s) => s.progress.maxReachedStep);
 
   useEffect(() => { dispatch(reportStep(0)); }, [dispatch]);
+  useStepSync('ImportEvidence');
 
   const deviceId = useDeviceId();
   const { passphrase, isLoaded: passphraseLoaded } = usePassphrase();
@@ -263,7 +265,6 @@ export default function EvidenceScreen() {
   const [uploadChatExport] = useUploadChatExportMutation();
   const [localUploads, setLocalUploads] = useState<Record<string, LocalUpload>>({});
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
-  const [sheetVisible, setSheetVisible] = useState(false);
   const [howToVisible, setHowToVisible] = useState(false);
 
   useEffect(() => {
@@ -379,15 +380,6 @@ export default function EvidenceScreen() {
     await uploadFile(asset.uri, asset.name, asset.mimeType ?? 'text/plain');
   }, [passphrase, router, uploadFile]);
 
-  const closeSheetAndPick = (types: string[]) => {
-    setSheetVisible(false);
-    setTimeout(() => pickFile(types), 400);
-  };
-
-  const openHowTo = () => {
-    setSheetVisible(false);
-    setTimeout(() => setHowToVisible(true), 400);
-  };
 
   /* ---- Delete ---- */
 
@@ -411,7 +403,7 @@ export default function EvidenceScreen() {
       router.push('/settings');
       return;
     }
-    setSheetVisible(true);
+    pickFile(['text/plain', 'application/zip']);
   };
 
   /* ---- Derived state ---- */
@@ -482,9 +474,14 @@ export default function EvidenceScreen() {
               <Text style={[styles.emptyTitle, { color: t.fg }]}>No files yet</Text>
               <Text style={[styles.emptySubtitle, { color: t.muted }]}>
                 Tap{' '}
-                <Text style={{ color: t.primary, fontWeight: fontWeight.semibold }}>+</Text>
-                {' '}to add a chat export.
+                <Text style={{ color: t.primary, fontWeight: fontWeight.semibold }}>Add evidence</Text>
+                {' '}to import a chat export.
               </Text>
+              <Pressable onPress={() => setHowToVisible(true)} style={styles.sheetLink}>
+                <Text style={[styles.sheetLinkText, { color: t.primary }]}>
+                  How to export from WhatsApp
+                </Text>
+              </Pressable>
             </View>
           ) : (
             <View>
@@ -541,37 +538,6 @@ export default function EvidenceScreen() {
           />
         </View>
       </View>
-
-      {/* Add evidence sheet */}
-      <BottomSheet visible={sheetVisible} onClose={() => setSheetVisible(false)}>
-        <Text style={[styles.sheetTitle, { color: t.fg }]}>Add evidence</Text>
-
-        <Pressable
-          style={({ pressed }) => [styles.sheetOption, { opacity: pressed ? 0.7 : 1 }]}
-          onPress={() => closeSheetAndPick(['text/plain'])}
-        >
-          <MaterialIcons name="description" size={22} color={t.primary} />
-          <Text style={[styles.sheetOptionLabel, { color: t.fg }]}>
-            WhatsApp export (.txt)
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [styles.sheetOption, { opacity: pressed ? 0.7 : 1 }]}
-          onPress={() => closeSheetAndPick(['application/zip'])}
-        >
-          <MaterialIcons name="folder-zip" size={22} color={t.primary} />
-          <Text style={[styles.sheetOptionLabel, { color: t.fg }]}>
-            ZIP archive (.zip)
-          </Text>
-        </Pressable>
-
-        <Pressable onPress={openHowTo} style={styles.sheetLink}>
-          <Text style={[styles.sheetLinkText, { color: t.primary }]}>
-            How to export from WhatsApp
-          </Text>
-        </Pressable>
-      </BottomSheet>
 
       {/* How to export sheet */}
       <BottomSheet visible={howToVisible} onClose={() => setHowToVisible(false)}>
@@ -666,16 +632,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
     marginBottom: spacing.lg,
-  },
-  sheetOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  sheetOptionLabel: {
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.medium,
   },
   sheetLink: {
     marginTop: spacing.lg,

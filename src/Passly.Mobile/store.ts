@@ -14,17 +14,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "./api/api";
 import themeReducer from "./store/theme-slice";
 import progressReducer from "./store/progress-slice";
+import activeSubmissionReducer from "./store/active-submission-slice";
 
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: ["theme", "progress"],
+  whitelist: ["theme", "progress", "activeSubmission"],
 };
 
 const rootReducer = combineReducers({
   [api.reducerPath]: api.reducer,
   theme: themeReducer,
   progress: progressReducer,
+  activeSubmission: activeSubmissionReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

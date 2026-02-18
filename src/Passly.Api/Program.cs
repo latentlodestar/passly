@@ -37,6 +37,7 @@ app.MapDefaultEndpoints();
 app.MapStatusEndpoints();
 app.MapLogEndpoints();
 app.MapImportEndpoints();
+app.MapSubmissionEndpoints();
 
 app.Run();
 

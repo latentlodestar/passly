@@ -16,10 +16,10 @@ export function OnboardingPage() {
           submit with certainty.
         </p>
         <div className="hero__actions">
-          <Button size="lg" onClick={() => navigate("/evidence")}>
+          <Button size="lg" onClick={() => navigate("/submission/evidence")}>
             Begin preparation
           </Button>
-          <Button variant="secondary" size="lg" onClick={() => navigate("/checklist")}>
+          <Button variant="secondary" size="lg" onClick={() => navigate("/submission/checklist")}>
             View checklist
           </Button>
         </div>

@@ -1,39 +1,48 @@
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, Link } from "react-router-dom";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Stepper } from "./components/Stepper";
-import { OnboardingPage } from "./pages/OnboardingPage.tsx";
-import { EvidenceImportPage } from "./pages/EvidenceImportPage.tsx";
-import { ChecklistPage } from "./pages/ChecklistPage.tsx";
-
-const processSteps = [
-  { label: "Get started" },
-  { label: "Import evidence" },
-  { label: "Review & complete" },
-];
-
-const routeToStep: Record<string, number> = {
-  "/home": 0,
-  "/evidence": 1,
-  "/checklist": 2,
-};
+import { LandingPage } from "./pages/LandingPage";
+import { OnboardingPage } from "./pages/OnboardingPage";
+import { EvidenceImportPage } from "./pages/EvidenceImportPage";
+import { ChecklistPage } from "./pages/ChecklistPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { useStepSync } from "./hooks/useStepSync";
+import { processSteps, routeToStepIndex } from "./lib/steps";
 
 export default function App() {
   const { pathname } = useLocation();
-  const currentStep = routeToStep[pathname] ?? 0;
+  const showStepper = pathname.startsWith("/submission/");
+  const currentStep = routeToStepIndex(pathname);
+
+  useStepSync();
 
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="topbar__brand">Passly</div>
-        <Stepper steps={processSteps} currentStep={currentStep} className="topbar__stepper" />
-        <ThemeToggle />
+        <Link to="/" className="topbar__brand" style={{ textDecoration: "none" }}>
+          Passly
+        </Link>
+        {showStepper && (
+          <Stepper steps={processSteps} currentStep={currentStep} className="topbar__stepper" />
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+          <Link to="/settings" className="btn btn--ghost btn--sm">
+            Settings
+          </Link>
+          <ThemeToggle />
+        </div>
       </header>
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<Navigate to="/home" replace />} />
-          <Route path="/home" element={<OnboardingPage />} />
-          <Route path="/evidence" element={<EvidenceImportPage />} />
-          <Route path="/checklist" element={<ChecklistPage />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/submission/home" element={<OnboardingPage />} />
+          <Route path="/submission/evidence" element={<EvidenceImportPage />} />
+          <Route path="/submission/checklist" element={<ChecklistPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          {/* Redirect old routes */}
+          <Route path="/home" element={<Navigate to="/submission/home" replace />} />
+          <Route path="/evidence" element={<Navigate to="/submission/evidence" replace />} />
+          <Route path="/checklist" element={<Navigate to="/submission/checklist" replace />} />
         </Routes>
       </main>
     </div>

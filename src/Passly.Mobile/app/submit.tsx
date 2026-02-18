@@ -7,6 +7,7 @@ import { colors, spacing, fontSize, fontWeight } from '@/constants/design-tokens
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { reportStep } from '@/store/progress-slice';
+import { useStepSync } from '@/hooks/use-step-sync';
 import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
 import { SettingsFab } from '@/components/ui/AppHeader';
@@ -26,6 +27,7 @@ export default function SubmitScreen() {
   const maxReachedStep = useAppSelector((s) => s.progress.maxReachedStep);
 
   useEffect(() => { dispatch(reportStep(2)); }, [dispatch]);
+  useStepSync('ReviewComplete');
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top', 'left', 'right']}>

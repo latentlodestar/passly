@@ -11,6 +11,8 @@ public sealed class IngestDbContext(DbContextOptions<IngestDbContext> options) :
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("ingest");
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(IngestDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(IngestDbContext).Assembly,
+            t => t.Namespace?.StartsWith("Passly.Persistence.Configurations.Ingest") == true);
     }
 }
