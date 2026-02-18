@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="All" />
     <PackageReference Include="Rebus.ServiceProvider" />
+    <PackageReference Include="Rebus.AmazonSqs" />
   </ItemGroup>
 
   <ItemGroup>

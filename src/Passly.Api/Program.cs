@@ -1,3 +1,4 @@
+using Amazon.SQS;
 using Passly.Abstractions.Contracts;
 using Passly.Api.Endpoints;
 using Passly.Core;
@@ -14,9 +15,27 @@ builder.AddInfrastructure();
 builder.AddPersistence();
 builder.Services.AddCore();
 
-builder.Services.AddRebus(cfg => cfg
-    .Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "passly-imports"))
-    .Routing(r => r.TypeBased().Map<ChatImportCreated>("passly-imports")));
+var messagingTransport = builder.Configuration["Messaging:Transport"] ?? "inmemory";
+
+builder.Services.AddRebus(cfg =>
+{
+    cfg.Routing(r => r.TypeBased().Map<ChatImportCreated>("passly-imports"));
+
+    if (messagingTransport == "sqs")
+    {
+        var region = builder.Configuration["Messaging:Region"] ?? "us-east-1";
+
+        cfg.Transport(t => t.UseAmazonSQSAsOneWayClient(
+            new AmazonSQSConfig { RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region) },
+            new AmazonSQSTransportOptions()));
+    }
+    else
+    {
+        cfg.Transport(t => t.UseInMemoryTransport(new InMemNetwork(), "passly-imports"));
+    }
+
+    return cfg;
+});
 
 builder.Services.AutoRegisterHandlersFromAssemblyOf<ChatImportCreatedHandler>();
 

@@ -1,0 +1,156 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (e.g., sha-abc12345)"
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ENVIRONMENT: prod
+  ECS_CLUSTER: passly-prod-cluster
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Verify images exist in staging ECR and re-tag for prod
+      - name: Verify and re-tag images
+        run: |
+          for SERVICE in api worker migration-runner; do
+            STAGING_REPO="passly-staging-${SERVICE}"
+            PROD_REPO="passly-prod-${SERVICE}"
+            TAG="${{ inputs.image_tag }}"
+
+            echo "Pulling ${STAGING_REPO}:${TAG}"
+            docker pull "${{ steps.ecr-login.outputs.registry }}/${STAGING_REPO}:${TAG}"
+
+            echo "Tagging for ${PROD_REPO}:${TAG}"
+            docker tag "${{ steps.ecr-login.outputs.registry }}/${STAGING_REPO}:${TAG}" \
+              "${{ steps.ecr-login.outputs.registry }}/${PROD_REPO}:${TAG}"
+
+            echo "Pushing ${PROD_REPO}:${TAG}"
+            docker push "${{ steps.ecr-login.outputs.registry }}/${PROD_REPO}:${TAG}"
+          done
+
+      # Run database migrations
+      - name: Run migrations
+        run: |
+          TASK_ARN=$(aws ecs run-task \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --task-definition passly-prod-migration-runner \
+            --launch-type FARGATE \
+            --network-configuration '{
+              "awsvpcConfiguration": {
+                "subnets": ${{ vars.PRIVATE_SUBNET_IDS }},
+                "securityGroups": ${{ vars.ECS_WORKER_SG_IDS }},
+                "assignPublicIp": "DISABLED"
+              }
+            }' \
+            --overrides '{
+              "containerOverrides": [{
+                "name": "migration-runner",
+                "image": "${{ steps.ecr-login.outputs.registry }}/passly-prod-migration-runner:${{ inputs.image_tag }}"
+              }]
+            }' \
+            --query 'tasks[0].taskArn' --output text)
+
+          echo "Waiting for migration task: $TASK_ARN"
+          aws ecs wait tasks-stopped --cluster ${{ env.ECS_CLUSTER }} --tasks "$TASK_ARN"
+
+          EXIT_CODE=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks "$TASK_ARN" \
+            --query 'tasks[0].containers[0].exitCode' --output text)
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration failed with exit code: $EXIT_CODE"
+            exit 1
+          fi
+          echo "Migrations completed successfully"
+
+      # Update API service
+      - name: Deploy API
+        run: |
+          TASK_DEF=$(aws ecs describe-task-definition --task-definition passly-prod-api --query 'taskDefinition' --output json)
+
+          NEW_TASK_DEF=$(echo "$TASK_DEF" | jq --arg IMAGE "${{ steps.ecr-login.outputs.registry }}/passly-prod-api:${{ inputs.image_tag }}" \
+            '.containerDefinitions[0].image = $IMAGE |
+            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+
+          NEW_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF" \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service passly-prod-api \
+            --task-definition "$NEW_ARN" --force-new-deployment
+
+      # Update Worker service
+      - name: Deploy Worker
+        run: |
+          TASK_DEF=$(aws ecs describe-task-definition --task-definition passly-prod-worker --query 'taskDefinition' --output json)
+
+          NEW_TASK_DEF=$(echo "$TASK_DEF" | jq --arg IMAGE "${{ steps.ecr-login.outputs.registry }}/passly-prod-worker:${{ inputs.image_tag }}" \
+            '.containerDefinitions[0].image = $IMAGE |
+            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+
+          NEW_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF" \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service passly-prod-worker \
+            --task-definition "$NEW_ARN" --force-new-deployment
+
+      # Deploy frontend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: src/Passly.Web/package-lock.json
+
+      - name: Build frontend
+        working-directory: src/Passly.Web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Sync frontend to S3
+        run: |
+          aws s3 sync src/Passly.Web/dist s3://passly-prod-web --delete
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/index.html"
+
+      # Wait for services to stabilize
+      - name: Wait for API service stability
+        run: |
+          aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services passly-prod-api
+
+      - name: Wait for Worker service stability
+        run: |
+          aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services passly-prod-worker

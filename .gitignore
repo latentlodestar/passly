@@ -60,3 +60,9 @@ docker-compose.override.yml
 ## Aspire
 .env
 .dcproj.user
+
+## Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/*.tfplan
