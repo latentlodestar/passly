@@ -54,6 +54,9 @@ appsettings.*.json
 ## Docker
 docker-compose.override.yml
 
+## ML Models (downloaded via scripts/download-model.sh)
+*.onnx
+
 ## Aspire
 .env
 .dcproj.user

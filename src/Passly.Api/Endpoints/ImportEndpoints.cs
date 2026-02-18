@@ -64,6 +64,37 @@ public static class ImportEndpoints
         .WithName("GetChatImports")
         .WithTags("Imports");
 
+        app.MapGet("/api/imports/{id:guid}/representative-messages", async (
+            Guid id,
+            string deviceId,
+            string passphrase,
+            int? targetCount,
+            GetRepresentativeMessagesHandler handler,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(deviceId))
+                return Results.BadRequest(new { error = "deviceId is required." });
+
+            if (string.IsNullOrWhiteSpace(passphrase) || passphrase.Length < 8)
+                return Results.BadRequest(new { error = "Passphrase must be at least 8 characters." });
+
+            var count = targetCount ?? 200;
+            if (count is < 1 or > 1000)
+                return Results.BadRequest(new { error = "targetCount must be between 1 and 1000." });
+
+            var (response, error) = await handler.HandleAsync(id, deviceId, passphrase, count, ct);
+
+            return error switch
+            {
+                GetRepresentativeMessagesError.NotFound => Results.NotFound(),
+                GetRepresentativeMessagesError.NotParsed => Results.Conflict(
+                    new { error = "Chat import has not been parsed yet." }),
+                _ => Results.Ok(response),
+            };
+        })
+        .WithName("GetRepresentativeMessages")
+        .WithTags("Imports");
+
         app.MapGet("/api/imports/{id:guid}/messages", async (
             Guid id,
             string deviceId,

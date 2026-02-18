@@ -18,6 +18,7 @@
   <ItemGroup Label="Application">
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.21.0" />
   </ItemGroup>
 
   <ItemGroup Label="EF Core">

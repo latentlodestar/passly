@@ -10,7 +10,13 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" />
     <PackageReference Include="Rebus" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Models\all-MiniLM-L6-v2.onnx" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Models\vocab.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<CreateChatImportHandler>();
         services.AddScoped<GetChatImportsHandler>();
         services.AddScoped<GetChatImportMessagesHandler>();
+        services.AddScoped<GetRepresentativeMessagesHandler>();
         services.AddScoped<ParseChatImportHandler>();
         services.AddSingleton<WhatsAppChatParser>();
         services.AddScoped<IEncryptionService, AesGcmEncryptionService>();
@@ -22,6 +23,17 @@ public static class DependencyInjection
         services.AddScoped<GetSubmissionsHandler>();
         services.AddScoped<GetSubmissionHandler>();
         services.AddScoped<UpdateSubmissionStepHandler>();
+
+        // Embedding & curation
+        services.AddSingleton<IEmbeddingService>(sp =>
+        {
+            var modelDir = Path.Combine(AppContext.BaseDirectory, "Models");
+            var modelPath = Path.Combine(modelDir, "all-MiniLM-L6-v2.onnx");
+            var vocabPath = Path.Combine(modelDir, "vocab.txt");
+            return new OnnxEmbeddingService(modelPath, vocabPath);
+        });
+        services.AddSingleton<IMessageCurator, MessageCurator>();
+
         return services;
     }
 }
