@@ -64,6 +64,30 @@ public static class ImportEndpoints
         .WithName("GetChatImports")
         .WithTags("Imports");
 
+        app.MapGet("/api/imports/{id:guid}/messages", async (
+            Guid id,
+            string deviceId,
+            string passphrase,
+            int skip,
+            int take,
+            GetChatImportMessagesHandler handler,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(deviceId))
+                return Results.BadRequest(new { error = "deviceId is required." });
+
+            if (string.IsNullOrWhiteSpace(passphrase) || passphrase.Length < 8)
+                return Results.BadRequest(new { error = "Passphrase must be at least 8 characters." });
+
+            if (take is < 1 or > 500)
+                return Results.BadRequest(new { error = "take must be between 1 and 500." });
+
+            var response = await handler.HandleAsync(id, deviceId, passphrase, skip, take, ct);
+            return response is not null ? Results.Ok(response) : Results.NotFound();
+        })
+        .WithName("GetChatImportMessages")
+        .WithTags("Imports");
+
         return app;
     }
 }

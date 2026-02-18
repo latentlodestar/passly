@@ -493,9 +493,7 @@ export default function EvidenceScreen() {
                   onDelete={() => handleDelete(file)}
                   onPress={
                     file.status === 'processed'
-                      ? () => {
-                          // TODO: navigate to document detail
-                        }
+                      ? () => router.push({ pathname: '/import-detail', params: { id: file.id } })
                       : file.status === 'failed'
                         ? () => Alert.alert('Upload error', file.error ?? 'An unknown error occurred.')
                         : undefined

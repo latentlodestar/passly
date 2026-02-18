@@ -37,3 +37,22 @@ export interface CreateSubmissionRequest {
 export interface UpdateSubmissionStepRequest {
   currentStep: string;
 }
+
+export interface ChatMessageResponse {
+  id: string;
+  senderName: string;
+  content: string;
+  timestamp: string;
+  messageIndex: number;
+}
+
+export interface ChatImportDetailResponse {
+  id: string;
+  fileName: string;
+  contentType: string;
+  status: string;
+  totalMessages: number;
+  createdAt: string;
+  updatedAt: string;
+  messages: ChatMessageResponse[];
+}

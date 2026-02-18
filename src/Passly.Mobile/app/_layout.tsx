@@ -17,6 +17,7 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="evidence" />
+        <Stack.Screen name="import-detail" />
         <Stack.Screen name="checklist" />
         <Stack.Screen name="submit" />
         <Stack.Screen

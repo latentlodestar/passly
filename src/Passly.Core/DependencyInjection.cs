@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<GetStatusHandler>();
         services.AddScoped<CreateChatImportHandler>();
         services.AddScoped<GetChatImportsHandler>();
+        services.AddScoped<GetChatImportMessagesHandler>();
         services.AddScoped<ParseChatImportHandler>();
         services.AddSingleton<WhatsAppChatParser>();
         services.AddScoped<IEncryptionService, AesGcmEncryptionService>();

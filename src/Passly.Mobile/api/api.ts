@@ -3,6 +3,7 @@ import type {
   ApiStatusResponse,
   CreateChatImportResponse,
   ChatImportSummaryResponse,
+  ChatImportDetailResponse,
   SubmissionResponse,
   CreateSubmissionRequest,
   UpdateSubmissionStepRequest,
@@ -28,6 +29,14 @@ export const api = createApi({
     getChatImports: builder.query<ChatImportSummaryResponse[], string>({
       query: (deviceId) => `/api/imports?deviceId=${encodeURIComponent(deviceId)}`,
       providesTags: ["Imports"],
+    }),
+    getChatImportMessages: builder.query<
+      ChatImportDetailResponse,
+      { id: string; deviceId: string; passphrase: string; skip: number; take: number }
+    >({
+      query: ({ id, deviceId, passphrase, skip, take }) =>
+        `/api/imports/${id}/messages?deviceId=${encodeURIComponent(deviceId)}&passphrase=${encodeURIComponent(passphrase)}&skip=${skip}&take=${take}`,
+      providesTags: (_result, _err, { id }) => [{ type: "Imports", id }],
     }),
     getSubmissions: builder.query<SubmissionResponse[], string>({
       query: (deviceId) => `/api/submissions?deviceId=${encodeURIComponent(deviceId)}`,
@@ -60,6 +69,7 @@ export const {
   useGetStatusQuery,
   useUploadChatExportMutation,
   useGetChatImportsQuery,
+  useGetChatImportMessagesQuery,
   useGetSubmissionsQuery,
   useGetSubmissionQuery,
   useCreateSubmissionMutation,
