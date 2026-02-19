@@ -13,8 +13,8 @@ using Pgvector;
 namespace Passly.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260219013415_AddSummaryEncryptedContent")]
-    partial class AddSummaryEncryptedContent
+    [Migration("20260219024558_AddSignature")]
+    partial class AddSignature
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -231,28 +231,36 @@ namespace Passly.Persistence.Migrations
                         .HasColumnType("bytea");
 
                     b.Property<byte[]>("EncryptedPdf")
-                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<byte[]>("EncryptedSignature")
                         .HasColumnType("bytea");
 
                     b.Property<int>("GapCount")
                         .HasColumnType("integer");
 
                     b.Property<byte[]>("Iv")
-                        .IsRequired()
                         .HasColumnType("bytea");
 
                     b.Property<byte[]>("Salt")
-                        .IsRequired()
                         .HasColumnType("bytea");
 
                     b.Property<int>("SelectedMessages")
                         .HasColumnType("integer");
 
+                    b.Property<byte[]>("SignatureIv")
+                        .HasColumnType("bytea");
+
+                    b.Property<byte[]>("SignatureSalt")
+                        .HasColumnType("bytea");
+
+                    b.Property<byte[]>("SignatureTag")
+                        .HasColumnType("bytea");
+
                     b.Property<Guid>("SubmissionId")
                         .HasColumnType("uuid");
 
                     b.Property<byte[]>("Tag")
-                        .IsRequired()
                         .HasColumnType("bytea");
 
                     b.Property<int>("TotalMessages")

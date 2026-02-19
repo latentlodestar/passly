@@ -5,64 +5,60 @@
 namespace Passly.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class AddSummaryEncryptedContent : Migration
+    public partial class AddSignature : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<byte[]>(
-                name: "ContentIv",
+                name: "EncryptedSignature",
                 schema: "app",
                 table: "submission_summaries",
                 type: "bytea",
-                nullable: false,
-                defaultValue: new byte[0]);
+                nullable: true);
 
             migrationBuilder.AddColumn<byte[]>(
-                name: "ContentSalt",
+                name: "SignatureIv",
                 schema: "app",
                 table: "submission_summaries",
                 type: "bytea",
-                nullable: false,
-                defaultValue: new byte[0]);
+                nullable: true);
 
             migrationBuilder.AddColumn<byte[]>(
-                name: "ContentTag",
+                name: "SignatureSalt",
                 schema: "app",
                 table: "submission_summaries",
                 type: "bytea",
-                nullable: false,
-                defaultValue: new byte[0]);
+                nullable: true);
 
             migrationBuilder.AddColumn<byte[]>(
-                name: "EncryptedContent",
+                name: "SignatureTag",
                 schema: "app",
                 table: "submission_summaries",
                 type: "bytea",
-                nullable: false,
-                defaultValue: new byte[0]);
+                nullable: true);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "ContentIv",
+                name: "EncryptedSignature",
                 schema: "app",
                 table: "submission_summaries");
 
             migrationBuilder.DropColumn(
-                name: "ContentSalt",
+                name: "SignatureIv",
                 schema: "app",
                 table: "submission_summaries");
 
             migrationBuilder.DropColumn(
-                name: "ContentTag",
+                name: "SignatureSalt",
                 schema: "app",
                 table: "submission_summaries");
 
             migrationBuilder.DropColumn(
-                name: "EncryptedContent",
+                name: "SignatureTag",
                 schema: "app",
                 table: "submission_summaries");
         }

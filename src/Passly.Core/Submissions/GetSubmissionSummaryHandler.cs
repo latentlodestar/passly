@@ -39,7 +39,7 @@ public sealed class GetSubmissionSummaryHandler(
             return (null, null, GetSubmissionSummaryError.WrongPassphrase);
         }
 
-        return (pdfBytes, GenerateSubmissionSummaryHandler.ToResponse(summary), null);
+        return (pdfBytes, AnalyzeSubmissionHandler.ToResponse(summary), null);
     }
 }
 

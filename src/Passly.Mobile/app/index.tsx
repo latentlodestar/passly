@@ -1,19 +1,23 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { colors, spacing, fontSize, fontWeight } from '@/constants/design-tokens';
+import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
 import { stepToRoute } from '@/constants/steps';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useDeviceId } from '@/hooks/use-device-id';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { setActiveSubmission } from '@/store/active-submission-slice';
+import { setActiveSubmission, clearActiveSubmission } from '@/store/active-submission-slice';
 import {
   useCreateSubmissionMutation,
-  useGetSubmissionQuery,
+  useGetSubmissionsQuery,
+  useDeleteSubmissionMutation,
 } from '@/api/api';
 import { Button } from '@/components/ui/Button';
 import { SettingsFab } from '@/components/ui/AppHeader';
+import type { SubmissionResponse } from '@/types';
 
 export default function HomeScreen() {
   const scheme = useColorScheme() ?? 'light';
@@ -22,14 +26,15 @@ export default function HomeScreen() {
   const dispatch = useAppDispatch();
   const deviceId = useDeviceId();
   const activeId = useAppSelector((s) => s.activeSubmission.id);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const [createSubmission, { isLoading: isCreating }] =
     useCreateSubmissionMutation();
+  const [deleteSubmission] = useDeleteSubmissionMutation();
 
-  const { data: activeSubmission } = useGetSubmissionQuery(
-    { id: activeId!, deviceId: deviceId! },
-    { skip: !activeId || !deviceId },
-  );
+  const { data: submissions = [] } = useGetSubmissionsQuery(deviceId ?? '', {
+    skip: !deviceId,
+  });
 
   const handleCreate = async () => {
     if (!deviceId) return;
@@ -42,10 +47,66 @@ export default function HomeScreen() {
   };
 
   const handleResume = () => {
-    if (activeSubmission) {
-      router.push(stepToRoute(activeSubmission.currentStep) as '/evidence');
+    if (submissions.length === 1) {
+      const sub = submissions[0];
+      dispatch(setActiveSubmission(sub.id));
+      router.push(stepToRoute(sub.currentStep) as '/evidence');
+    } else if (submissions.length > 1) {
+      setModalVisible(true);
     }
   };
+
+  const handleSelectPetition = (sub: SubmissionResponse) => {
+    dispatch(setActiveSubmission(sub.id));
+    setModalVisible(false);
+    router.push(stepToRoute(sub.currentStep) as '/evidence');
+  };
+
+  const handleDeletePetition = (sub: SubmissionResponse) => {
+    Alert.alert(
+      'Delete petition',
+      `Are you sure you want to delete "${sub.label}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            if (!deviceId) return;
+            await deleteSubmission({ id: sub.id, deviceId });
+            if (sub.id === activeId) {
+              dispatch(clearActiveSubmission());
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const renderPetitionRow = ({ item: sub }: { item: SubmissionResponse }) => (
+    <View style={[styles.petitionRow, { backgroundColor: t.surface, borderColor: t.border }]}>
+      <View style={styles.petitionInfo}>
+        <Text style={[styles.petitionLabel, { color: t.fg }]}>{sub.label}</Text>
+        <Text style={[styles.petitionMeta, { color: t.muted }]}>
+          {sub.status} · {new Date(sub.createdAt).toLocaleDateString()}
+        </Text>
+      </View>
+      <View style={styles.petitionActions}>
+        <Pressable
+          onPress={() => handleDeletePetition(sub)}
+          hitSlop={8}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        >
+          <MaterialIcons name="delete-outline" size={22} color={t.danger} />
+        </Pressable>
+        <Button
+          label="Resume"
+          size="sm"
+          onPress={() => handleSelectPetition(sub)}
+        />
+      </View>
+    </View>
+  );
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]}>
@@ -64,14 +125,14 @@ export default function HomeScreen() {
 
           <View style={styles.actions}>
             <Button
-              label={isCreating ? 'Creating...' : 'Create submission'}
+              label={isCreating ? 'Creating...' : 'Create petition'}
               size="lg"
               onPress={handleCreate}
               disabled={isCreating || !deviceId}
             />
-            {activeSubmission && (
+            {submissions.length > 0 && (
               <Button
-                label="Resume submission"
+                label="Resume petition"
                 variant="secondary"
                 size="lg"
                 onPress={handleResume}
@@ -80,6 +141,43 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setModalVisible(false)}
+        >
+          <Pressable
+            style={[styles.modalContent, { backgroundColor: t.surface }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: t.fg }]}>
+                Select a petition
+              </Text>
+              <Pressable
+                onPress={() => setModalVisible(false)}
+                hitSlop={8}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+              >
+                <MaterialIcons name="close" size={24} color={t.muted} />
+              </Pressable>
+            </View>
+            <FlatList
+              data={submissions}
+              keyExtractor={(item) => item.id}
+              renderItem={renderPetitionRow}
+              contentContainerStyle={styles.modalList}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <SettingsFab />
     </SafeAreaView>
   );
@@ -114,5 +212,56 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     width: '100%',
     marginTop: spacing.sm,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  modalContent: {
+    borderRadius: radius.xl,
+    maxHeight: '70%',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.base,
+    paddingBottom: spacing.sm,
+  },
+  modalTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+  },
+  modalList: {
+    padding: spacing.base,
+    paddingTop: 0,
+    gap: spacing.sm,
+  },
+  petitionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    gap: spacing.md,
+  },
+  petitionInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  petitionLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  petitionMeta: {
+    fontSize: fontSize.xs,
+  },
+  petitionActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
 });

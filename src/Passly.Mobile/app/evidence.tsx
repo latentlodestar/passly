@@ -259,10 +259,13 @@ export default function EvidenceScreen() {
   const activeSubmissionId = useAppSelector((s) => s.activeSubmission.id);
   const { passphrase, isLoaded: passphraseLoaded } = usePassphrase();
   const [shouldPoll, setShouldPoll] = useState(false);
-  const { data: imports = [] } = useGetChatImportsQuery(deviceId ?? '', {
-    skip: !deviceId,
-    pollingInterval: shouldPoll ? 3000 : 0,
-  });
+  const { data: imports = [] } = useGetChatImportsQuery(
+    { deviceId: deviceId ?? '', submissionId: activeSubmissionId ?? '' },
+    {
+      skip: !deviceId || !activeSubmissionId,
+      pollingInterval: shouldPoll ? 3000 : 0,
+    },
+  );
   const [uploadChatExport] = useUploadChatExportMutation();
   const [localUploads, setLocalUploads] = useState<Record<string, LocalUpload>>({});
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());

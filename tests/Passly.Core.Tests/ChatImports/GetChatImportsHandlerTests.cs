@@ -21,15 +21,18 @@ public sealed class GetChatImportsHandlerTests : IDisposable
     }
 
     [Fact]
-    public async Task HandleAsync_FiltersByDeviceId()
+    public async Task HandleAsync_FiltersByDeviceIdAndSubmissionId()
     {
+        var submissionId = Guid.NewGuid();
+        var otherSubmissionId = Guid.NewGuid();
         _db.ChatImports.AddRange(
-            MakeImport("device-1", "chat-a.txt"),
-            MakeImport("device-2", "chat-b.txt"),
-            MakeImport("device-1", "chat-c.txt"));
+            MakeImport("device-1", "chat-a.txt", submissionId: submissionId),
+            MakeImport("device-2", "chat-b.txt", submissionId: submissionId),
+            MakeImport("device-1", "chat-c.txt", submissionId: submissionId),
+            MakeImport("device-1", "chat-d.txt", submissionId: otherSubmissionId));
         await _db.SaveChangesAsync();
 
-        var result = await _sut.HandleAsync("device-1");
+        var result = await _sut.HandleAsync("device-1", submissionId);
 
         result.Should().HaveCount(2);
         result.Should().OnlyContain(r => r.FileName == "chat-a.txt" || r.FileName == "chat-c.txt");
@@ -38,13 +41,14 @@ public sealed class GetChatImportsHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsync_OrderedByCreatedAtDescending()
     {
+        var submissionId = Guid.NewGuid();
         var baseTime = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
         _db.ChatImports.AddRange(
-            MakeImport("device-1", "older.txt", baseTime),
-            MakeImport("device-1", "newer.txt", baseTime.AddHours(1)));
+            MakeImport("device-1", "older.txt", createdAt: baseTime, submissionId: submissionId),
+            MakeImport("device-1", "newer.txt", createdAt: baseTime.AddHours(1), submissionId: submissionId));
         await _db.SaveChangesAsync();
 
-        var result = await _sut.HandleAsync("device-1");
+        var result = await _sut.HandleAsync("device-1", submissionId);
 
         result[0].FileName.Should().Be("newer.txt");
         result[1].FileName.Should().Be("older.txt");
@@ -53,16 +57,16 @@ public sealed class GetChatImportsHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsync_NoImports_ReturnsEmptyList()
     {
-        var result = await _sut.HandleAsync("unknown-device");
+        var result = await _sut.HandleAsync("unknown-device", Guid.NewGuid());
 
         result.Should().BeEmpty();
     }
 
-    private static ChatImport MakeImport(string deviceId, string fileName, DateTimeOffset? createdAt = null) => new()
+    private static ChatImport MakeImport(string deviceId, string fileName, DateTimeOffset? createdAt = null, Guid? submissionId = null) => new()
     {
         Id = Guid.NewGuid(),
         DeviceId = deviceId,
-        SubmissionId = Guid.NewGuid(),
+        SubmissionId = submissionId ?? Guid.NewGuid(),
         FileName = fileName,
         FileHash = Guid.NewGuid().ToString(),
         ContentType = "text/plain",

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Passly.Persistence;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace Passly.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260219015208_AddSummaryContentAndOptionalPdf")]
+    partial class AddSummaryContentAndOptionalPdf
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -230,9 +233,6 @@ namespace Passly.Persistence.Migrations
                     b.Property<byte[]>("EncryptedPdf")
                         .HasColumnType("bytea");
 
-                    b.Property<byte[]>("EncryptedSignature")
-                        .HasColumnType("bytea");
-
                     b.Property<int>("GapCount")
                         .HasColumnType("integer");
 
@@ -244,15 +244,6 @@ namespace Passly.Persistence.Migrations
 
                     b.Property<int>("SelectedMessages")
                         .HasColumnType("integer");
-
-                    b.Property<byte[]>("SignatureIv")
-                        .HasColumnType("bytea");
-
-                    b.Property<byte[]>("SignatureSalt")
-                        .HasColumnType("bytea");
-
-                    b.Property<byte[]>("SignatureTag")
-                        .HasColumnType("bytea");
 
                     b.Property<Guid>("SubmissionId")
                         .HasColumnType("uuid");

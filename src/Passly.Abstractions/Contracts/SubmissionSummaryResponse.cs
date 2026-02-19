@@ -7,4 +7,6 @@ public sealed record SubmissionSummaryResponse(
     int TotalMessages,
     int SelectedMessages,
     int GapCount,
+    bool HasPdf,
+    bool HasSignature,
     DateTimeOffset CreatedAt);

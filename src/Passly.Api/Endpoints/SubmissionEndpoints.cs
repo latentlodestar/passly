@@ -52,6 +52,21 @@ public static class SubmissionEndpoints
         .WithName("GetSubmission")
         .WithTags("Submissions");
 
+        app.MapDelete("/api/submissions/{id:guid}", async (
+            Guid id,
+            string deviceId,
+            DeleteSubmissionHandler handler,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(deviceId))
+                return Results.BadRequest(new { error = "deviceId is required." });
+
+            var deleted = await handler.HandleAsync(id, deviceId, ct);
+            return deleted ? Results.NoContent() : Results.NotFound();
+        })
+        .WithName("DeleteSubmission")
+        .WithTags("Submissions");
+
         app.MapPatch("/api/submissions/{id:guid}/step", async (
             Guid id,
             string deviceId,
@@ -66,6 +81,36 @@ public static class SubmissionEndpoints
             return response is not null ? Results.Ok(response) : Results.NotFound();
         })
         .WithName("UpdateSubmissionStep")
+        .WithTags("Submissions");
+
+        app.MapPost("/api/submissions/{id:guid}/analyze", async (
+            Guid id,
+            AnalyzeSubmissionRequest request,
+            AnalyzeSubmissionHandler handler,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.DeviceId))
+                return Results.BadRequest(new { error = "deviceId is required." });
+
+            if (string.IsNullOrWhiteSpace(request.Passphrase))
+                return Results.BadRequest(new { error = "passphrase is required." });
+
+            var (response, error) = await handler.HandleAsync(id, request, ct);
+
+            return error switch
+            {
+                AnalyzeSubmissionError.SubmissionNotFound => Results.NotFound(),
+                AnalyzeSubmissionError.AnalysisAlreadyExists =>
+                    Results.Conflict(new { error = "An analysis already exists for this submission." }),
+                AnalyzeSubmissionError.ImportNotFound =>
+                    Results.NotFound(new { error = "Chat import not found." }),
+                AnalyzeSubmissionError.ImportNotParsed =>
+                    Results.BadRequest(new { error = "Chat import has not been parsed yet." }),
+                null => Results.Created($"/api/submissions/{id}/summary", response),
+                _ => Results.StatusCode(500),
+            };
+        })
+        .WithName("AnalyzeSubmission")
         .WithTags("Submissions");
 
         app.MapPost("/api/submissions/{id:guid}/summary", async (
@@ -85,13 +130,17 @@ public static class SubmissionEndpoints
             return error switch
             {
                 GenerateSubmissionSummaryError.SubmissionNotFound => Results.NotFound(),
-                GenerateSubmissionSummaryError.SummaryAlreadyExists =>
-                    Results.Conflict(new { error = "A summary already exists for this submission." }),
-                GenerateSubmissionSummaryError.ImportNotFound =>
-                    Results.NotFound(new { error = "Chat import not found." }),
-                GenerateSubmissionSummaryError.ImportNotParsed =>
-                    Results.BadRequest(new { error = "Chat import has not been parsed yet." }),
-                null => Results.Created($"/api/submissions/{id}/summary", response),
+                GenerateSubmissionSummaryError.AnalysisNotFound =>
+                    Results.NotFound(new { error = "Run analysis before generating a PDF." }),
+                GenerateSubmissionSummaryError.PdfAlreadyExists =>
+                    Results.Conflict(new { error = "A PDF has already been generated." }),
+                GenerateSubmissionSummaryError.WrongPassphrase =>
+                    Results.Unauthorized(),
+                GenerateSubmissionSummaryError.SignatureRequired =>
+                    Results.BadRequest(new { error = "A signature is required to generate the PDF." }),
+                GenerateSubmissionSummaryError.InvalidSignature =>
+                    Results.BadRequest(new { error = "The provided signature is not valid base64." }),
+                null => Results.Ok(response),
                 _ => Results.StatusCode(500),
             };
         })

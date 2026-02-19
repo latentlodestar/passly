@@ -7,6 +7,7 @@ import type {
   SubmissionResponse,
   CreateSubmissionRequest,
   UpdateSubmissionStepRequest,
+  AnalyzeSubmissionRequest,
   GenerateSubmissionSummaryRequest,
   SubmissionSummaryResponse,
   SummaryContentResponse,
@@ -29,8 +30,9 @@ export const api = createApi({
       }),
       invalidatesTags: ["Imports"],
     }),
-    getChatImports: builder.query<ChatImportSummaryResponse[], string>({
-      query: (deviceId) => `/api/imports?deviceId=${encodeURIComponent(deviceId)}`,
+    getChatImports: builder.query<ChatImportSummaryResponse[], { deviceId: string; submissionId: string }>({
+      query: ({ deviceId, submissionId }) =>
+        `/api/imports?deviceId=${encodeURIComponent(deviceId)}&submissionId=${encodeURIComponent(submissionId)}`,
       providesTags: ["Imports"],
     }),
     getChatImportMessages: builder.query<
@@ -54,6 +56,13 @@ export const api = createApi({
       query: (body) => ({ url: "/api/submissions", method: "POST", body }),
       invalidatesTags: ["Submissions"],
     }),
+    deleteSubmission: builder.mutation<void, { id: string; deviceId: string }>({
+      query: ({ id, deviceId }) => ({
+        url: `/api/submissions/${id}?deviceId=${encodeURIComponent(deviceId)}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Submissions"],
+    }),
     updateSubmissionStep: builder.mutation<
       SubmissionResponse,
       { id: string; deviceId: string; body: UpdateSubmissionStepRequest }
@@ -64,6 +73,19 @@ export const api = createApi({
         body,
       }),
       invalidatesTags: (_result, _err, { id }) => [{ type: "Submissions", id }],
+    }),
+    analyzeSubmission: builder.mutation<
+      SubmissionSummaryResponse,
+      { id: string; body: AnalyzeSubmissionRequest }
+    >({
+      query: ({ id, body }) => ({
+        url: `/api/submissions/${id}/analyze`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: "SubmissionSummary", id },
+      ],
     }),
     generateSubmissionSummary: builder.mutation<
       SubmissionSummaryResponse,
@@ -109,7 +131,9 @@ export const {
   useGetSubmissionsQuery,
   useGetSubmissionQuery,
   useCreateSubmissionMutation,
+  useDeleteSubmissionMutation,
   useUpdateSubmissionStepMutation,
+  useAnalyzeSubmissionMutation,
   useGenerateSubmissionSummaryMutation,
   useGetSubmissionSummaryQuery,
   useGetSubmissionSummaryContentQuery,

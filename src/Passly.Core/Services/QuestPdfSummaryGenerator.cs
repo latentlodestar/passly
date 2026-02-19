@@ -64,6 +64,10 @@ internal sealed class QuestPdfSummaryGenerator : ISummaryPdfGenerator
 
             // Section 3: Representative Messages
             col.Item().Element(c => ComposeMessages(c, data));
+
+            // Section 4: Attestation & Signature
+            if (data.SignatureImageBytes is not null)
+                col.Item().Element(c => ComposeAttestation(c, data));
         });
     }
 
@@ -157,6 +161,40 @@ internal sealed class QuestPdfSummaryGenerator : ISummaryPdfGenerator
                     });
                 }
             }
+        });
+    }
+
+    private static void ComposeAttestation(IContainer container, SummaryPdfData data)
+    {
+        container.Column(col =>
+        {
+            col.Item().LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
+            col.Item().PaddingTop(12).Text("Attestation").FontSize(14).Bold();
+            col.Item().PaddingTop(8).Text(
+                "I attest that the information contained in this summary is accurate and complete " +
+                "to the best of my knowledge. The communication records presented have not been " +
+                "altered, fabricated, or selectively omitted to misrepresent the nature of the relationship.")
+                .FontSize(10).LineHeight(1.4f);
+
+            col.Item().PaddingTop(16).Row(row =>
+            {
+                row.RelativeItem(2).Column(sigCol =>
+                {
+                    sigCol.Item().Height(60).Image(data.SignatureImageBytes!);
+                    sigCol.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor(Colors.Grey.Medium);
+                    sigCol.Item().PaddingTop(2).Text("Signature").FontSize(8).FontColor(Colors.Grey.Darken1);
+                });
+
+                row.ConstantItem(40);
+
+                row.RelativeItem(1).Column(dateCol =>
+                {
+                    dateCol.Item().Height(60).AlignBottom().Text(DateTime.UtcNow.ToString("yyyy-MM-dd"))
+                        .FontSize(11);
+                    dateCol.Item().PaddingTop(4).LineHorizontal(0.5f).LineColor(Colors.Grey.Medium);
+                    dateCol.Item().PaddingTop(2).Text("Date").FontSize(8).FontColor(Colors.Grey.Darken1);
+                });
+            });
         });
     }
 }

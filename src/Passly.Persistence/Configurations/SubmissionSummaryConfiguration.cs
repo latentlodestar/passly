@@ -14,14 +14,18 @@ internal sealed class SubmissionSummaryConfiguration : IEntityTypeConfiguration<
 
         builder.Property(e => e.SubmissionId).IsRequired();
         builder.Property(e => e.ChatImportId).IsRequired();
-        builder.Property(e => e.EncryptedPdf).IsRequired();
-        builder.Property(e => e.Salt).IsRequired();
-        builder.Property(e => e.Iv).IsRequired();
-        builder.Property(e => e.Tag).IsRequired();
+        builder.Property(e => e.EncryptedPdf).IsRequired(false);
+        builder.Property(e => e.Salt).IsRequired(false);
+        builder.Property(e => e.Iv).IsRequired(false);
+        builder.Property(e => e.Tag).IsRequired(false);
         builder.Property(e => e.EncryptedContent).IsRequired();
         builder.Property(e => e.ContentSalt).IsRequired();
         builder.Property(e => e.ContentIv).IsRequired();
         builder.Property(e => e.ContentTag).IsRequired();
+        builder.Property(e => e.EncryptedSignature).IsRequired(false);
+        builder.Property(e => e.SignatureSalt).IsRequired(false);
+        builder.Property(e => e.SignatureIv).IsRequired(false);
+        builder.Property(e => e.SignatureTag).IsRequired(false);
 
         builder.HasIndex(e => e.SubmissionId).IsUnique();
 

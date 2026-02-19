@@ -12,4 +12,5 @@ public sealed record SummaryPdfData(
     int TotalMessages,
     IReadOnlyList<CuratedMessage> RepresentativeMessages,
     IReadOnlyList<CommunicationGap> Gaps,
-    IReadOnlyDictionary<string, int> MessageCountByTimeWindow);
+    IReadOnlyDictionary<string, int> MessageCountByTimeWindow,
+    byte[]? SignatureImageBytes = null);

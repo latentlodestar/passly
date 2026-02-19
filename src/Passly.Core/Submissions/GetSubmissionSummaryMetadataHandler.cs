@@ -22,6 +22,8 @@ public sealed class GetSubmissionSummaryMetadataHandler(AppDbContext db)
                 ss.TotalMessages,
                 ss.SelectedMessages,
                 ss.GapCount,
+                ss.HasPdf,
+                ss.HasSignature,
                 ss.CreatedAt))
             .FirstOrDefaultAsync(ct);
     }

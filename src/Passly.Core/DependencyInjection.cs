@@ -23,7 +23,9 @@ public static class DependencyInjection
         services.AddScoped<GetSubmissionsHandler>();
         services.AddScoped<GetSubmissionHandler>();
         services.AddScoped<UpdateSubmissionStepHandler>();
+        services.AddScoped<DeleteSubmissionHandler>();
         services.AddSingleton<ISummaryPdfGenerator, QuestPdfSummaryGenerator>();
+        services.AddScoped<AnalyzeSubmissionHandler>();
         services.AddScoped<GenerateSubmissionSummaryHandler>();
         services.AddScoped<GetSubmissionSummaryHandler>();
         services.AddScoped<GetSubmissionSummaryMetadataHandler>();

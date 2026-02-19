@@ -60,13 +60,17 @@ public static class ImportEndpoints
 
         app.MapGet("/api/imports", async (
             string deviceId,
+            Guid submissionId,
             GetChatImportsHandler handler,
             CancellationToken ct) =>
         {
             if (string.IsNullOrWhiteSpace(deviceId))
                 return Results.BadRequest(new { error = "deviceId is required." });
 
-            return Results.Ok(await handler.HandleAsync(deviceId, ct));
+            if (submissionId == Guid.Empty)
+                return Results.BadRequest(new { error = "submissionId is required." });
+
+            return Results.Ok(await handler.HandleAsync(deviceId, submissionId, ct));
         })
         .WithName("GetChatImports")
         .WithTags("Imports");

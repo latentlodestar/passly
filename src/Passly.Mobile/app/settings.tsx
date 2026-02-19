@@ -5,14 +5,11 @@ import { useState } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
-import { stepToRoute } from '@/constants/steps';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useDeviceId } from '@/hooks/use-device-id';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setAppearance, type Appearance } from '@/store/theme-slice';
-import { setActiveSubmission } from '@/store/active-submission-slice';
 import { usePassphrase } from '@/hooks/use-passphrase';
-import { useGetSubmissionsQuery } from '@/api/api';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
 import { Button } from '@/components/ui/Button';
@@ -30,10 +27,6 @@ export default function SettingsScreen() {
   const dispatch = useAppDispatch();
   const appearance = useAppSelector((state) => state.theme.appearance);
   const deviceId = useDeviceId();
-  const activeId = useAppSelector((state) => state.activeSubmission.id);
-  const { data: submissions = [] } = useGetSubmissionsQuery(deviceId ?? '', {
-    skip: !deviceId,
-  });
   const { passphrase: savedPassphrase, isLoaded, setPassphrase } = usePassphrase();
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | undefined>();
@@ -108,59 +101,6 @@ export default function SettingsScreen() {
             })}
           </CardBody>
         </Card>
-
-        {submissions.length > 0 && (
-          <Card>
-            <CardHeader>Submissions</CardHeader>
-            <CardBody>
-              {submissions.map((sub) => {
-                const isActive = sub.id === activeId;
-                return (
-                  <View
-                    key={sub.id}
-                    style={[
-                      styles.submissionRow,
-                      {
-                        backgroundColor: isActive ? t.primaryMuted : 'transparent',
-                        borderColor: isActive ? t.primary : t.border,
-                      },
-                    ]}
-                  >
-                    <View style={styles.submissionInfo}>
-                      <Text style={[styles.submissionLabel, { color: t.fg }]}>
-                        {sub.label}
-                      </Text>
-                      <Text style={[styles.submissionMeta, { color: t.muted }]}>
-                        {sub.status} · {new Date(sub.createdAt).toLocaleDateString()}
-                      </Text>
-                    </View>
-                    <View style={styles.submissionActions}>
-                      {!isActive && (
-                        <Button
-                          label="Set active"
-                          variant="secondary"
-                          size="sm"
-                          onPress={() => dispatch(setActiveSubmission(sub.id))}
-                        />
-                      )}
-                      <Button
-                        label="Open"
-                        size="sm"
-                        onPress={() => {
-                          dispatch(setActiveSubmission(sub.id));
-                          router.back();
-                          setTimeout(() => {
-                            router.push(stepToRoute(sub.currentStep) as '/evidence');
-                          }, 100);
-                        }}
-                      />
-                    </View>
-                  </View>
-                );
-              })}
-            </CardBody>
-          </Card>
-        )}
 
         <Card>
           <CardHeader>
@@ -245,29 +185,5 @@ const styles = StyleSheet.create({
   passphraseHint: {
     fontSize: fontSize.sm,
     lineHeight: 20,
-  },
-  submissionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  submissionInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  submissionLabel: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-  submissionMeta: {
-    fontSize: fontSize.xs,
-  },
-  submissionActions: {
-    flexDirection: 'row',
-    gap: spacing.xs,
   },
 });

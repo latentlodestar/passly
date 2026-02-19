@@ -58,10 +58,16 @@ export interface ChatImportDetailResponse {
   messages: ChatMessageResponse[];
 }
 
-export interface GenerateSubmissionSummaryRequest {
+export interface AnalyzeSubmissionRequest {
   deviceId: string;
   passphrase: string;
   chatImportId: string;
+}
+
+export interface GenerateSubmissionSummaryRequest {
+  deviceId: string;
+  passphrase: string;
+  signatureBase64: string;
 }
 
 export interface SubmissionSummaryResponse {
@@ -71,6 +77,8 @@ export interface SubmissionSummaryResponse {
   totalMessages: number;
   selectedMessages: number;
   gapCount: number;
+  hasPdf: boolean;
+  hasSignature: boolean;
   createdAt: string;
 }
 
