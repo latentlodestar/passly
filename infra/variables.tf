@@ -80,6 +80,30 @@ variable "aurora_max_capacity" {
   default     = 2
 }
 
+variable "enable_auto_shutdown" {
+  description = "Scale ECS services to 0 outside work hours (staging cost savings)"
+  type        = bool
+  default     = false
+}
+
+variable "auto_shutdown_timezone" {
+  description = "Timezone for auto-shutdown schedule"
+  type        = string
+  default     = "America/New_York"
+}
+
+variable "auto_shutdown_scale_up_cron" {
+  description = "Cron expression for scaling services up (AWS cron format)"
+  type        = string
+  default     = "cron(0 7 ? * MON-FRI *)"
+}
+
+variable "auto_shutdown_scale_down_cron" {
+  description = "Cron expression for scaling services down (AWS cron format)"
+  type        = string
+  default     = "cron(0 20 ? * MON-FRI *)"
+}
+
 variable "db_name" {
   description = "PostgreSQL database name"
   type        = string
