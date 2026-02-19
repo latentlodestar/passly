@@ -57,3 +57,8 @@ output "sqs_queue_url" {
   description = "SQS imports queue URL"
   value       = aws_sqs_queue.imports.url
 }
+
+output "public_subnet_ids" {
+  description = "Public subnet IDs (for GitHub Actions vars)"
+  value       = aws_subnet.public[*].id
+}

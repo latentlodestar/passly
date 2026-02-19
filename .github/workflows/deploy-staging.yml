@@ -65,9 +65,9 @@ jobs:
             --launch-type FARGATE \
             --network-configuration '{
               "awsvpcConfiguration": {
-                "subnets": ${{ vars.PRIVATE_SUBNET_IDS }},
+                "subnets": ${{ vars.PUBLIC_SUBNET_IDS }},
                 "securityGroups": ${{ vars.ECS_WORKER_SG_IDS }},
-                "assignPublicIp": "DISABLED"
+                "assignPublicIp": "ENABLED"
               }
             }' \
             --overrides '{
