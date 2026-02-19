@@ -2,17 +2,17 @@ using Passly.Abstractions.Contracts;
 using Passly.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace Passly.Core.Modeling;
+namespace Passly.Core.Submissions;
 
-public sealed class GetSubmissionsHandler(AppDbContext db)
+public sealed class GetSubmissionHandler(AppDbContext db)
 {
-    public async Task<IReadOnlyList<SubmissionResponse>> HandleAsync(
+    public async Task<SubmissionResponse?> HandleAsync(
+        Guid id,
         string deviceId,
         CancellationToken ct = default)
     {
         return await db.Submissions
-            .Where(s => s.DeviceId == deviceId)
-            .OrderByDescending(s => s.CreatedAt)
+            .Where(s => s.Id == id && s.DeviceId == deviceId)
             .Select(s => new SubmissionResponse(
                 s.Id,
                 s.Label,
@@ -20,6 +20,6 @@ public sealed class GetSubmissionsHandler(AppDbContext db)
                 s.CurrentStep.ToString(),
                 s.CreatedAt,
                 s.UpdatedAt))
-            .ToListAsync(ct);
+            .FirstOrDefaultAsync(ct);
     }
 }

@@ -1,6 +1,6 @@
-using Passly.Core.Ingest;
+using Passly.Core.ChatImports;
 
-namespace Passly.Core.Tests.Ingest;
+namespace Passly.Core.Tests.ChatImports;
 
 public sealed class WhatsAppChatParserTests
 {

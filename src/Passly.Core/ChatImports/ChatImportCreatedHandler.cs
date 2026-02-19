@@ -1,7 +1,7 @@
 using Rebus.Handlers;
 using Passly.Abstractions.Contracts;
 
-namespace Passly.Core.Ingest;
+namespace Passly.Core.ChatImports;
 
 public sealed class ChatImportCreatedHandler(ParseChatImportHandler parser) : IHandleMessages<ChatImportCreated>
 {

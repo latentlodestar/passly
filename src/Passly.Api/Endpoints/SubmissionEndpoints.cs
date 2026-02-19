@@ -1,5 +1,5 @@
 using Passly.Abstractions.Contracts;
-using Passly.Core.Modeling;
+using Passly.Core.Submissions;
 
 namespace Passly.Api.Endpoints;
 

@@ -2,7 +2,7 @@ using Passly.Abstractions.Contracts;
 using Passly.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace Passly.Core.Ingest;
+namespace Passly.Core.ChatImports;
 
 public sealed class GetChatImportsHandler(AppDbContext db)
 {

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Passly.Abstractions.Contracts;
-using Passly.Core.Ingest;
+using Passly.Core.ChatImports;
 using Rebus.Bus;
 
 namespace Passly.Api.Endpoints;

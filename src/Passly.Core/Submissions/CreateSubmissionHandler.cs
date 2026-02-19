@@ -3,7 +3,7 @@ using Passly.Abstractions.Interfaces;
 using Passly.Persistence;
 using Passly.Persistence.Models;
 
-namespace Passly.Core.Modeling;
+namespace Passly.Core.Submissions;
 
 public sealed class CreateSubmissionHandler(AppDbContext db, IClock clock)
 {

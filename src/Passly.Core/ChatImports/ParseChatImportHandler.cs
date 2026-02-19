@@ -7,7 +7,7 @@ using Passly.Abstractions.Interfaces;
 using Passly.Persistence;
 using Passly.Persistence.Models;
 
-namespace Passly.Core.Ingest;
+namespace Passly.Core.ChatImports;
 
 public sealed class ParseChatImportHandler(
     AppDbContext db,

@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace Passly.Core.Ingest;
+namespace Passly.Core.ChatImports;
 
 public sealed partial class WhatsAppChatParser
 {

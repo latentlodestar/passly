@@ -5,7 +5,7 @@ using Passly.Persistence;
 using Passly.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Passly.Core.Ingest;
+namespace Passly.Core.ChatImports;
 
 public sealed class CreateChatImportHandler(
     AppDbContext db,

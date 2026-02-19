@@ -5,7 +5,7 @@ using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
 using Passly.Persistence;
 
-namespace Passly.Core.Ingest;
+namespace Passly.Core.ChatImports;
 
 public sealed class GetRepresentativeMessagesHandler(
     AppDbContext db,

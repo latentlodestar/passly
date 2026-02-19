@@ -2,11 +2,11 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
-using Passly.Core.Ingest;
+using Passly.Core.ChatImports;
 using Passly.Persistence;
 using Passly.Persistence.Models;
 
-namespace Passly.Core.Tests.Ingest;
+namespace Passly.Core.Tests.ChatImports;
 
 public sealed class CreateChatImportHandlerTests : IDisposable
 {

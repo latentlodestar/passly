@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Passly.Abstractions.Contracts;
 using Passly.Persistence;
 
-namespace Passly.Core.Modeling;
+namespace Passly.Core.Submissions;
 
 public sealed class GetSubmissionSummaryMetadataHandler(AppDbContext db)
 {

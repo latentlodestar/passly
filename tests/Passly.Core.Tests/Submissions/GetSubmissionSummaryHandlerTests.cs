@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute.ExceptionExtensions;
 using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
-using Passly.Core.Modeling;
+using Passly.Core.Submissions;
 using Passly.Persistence;
 using Passly.Persistence.Models;
 
-namespace Passly.Core.Tests.Modeling;
+namespace Passly.Core.Tests.Submissions;
 
 public sealed class GetSubmissionSummaryHandlerTests : IDisposable
 {

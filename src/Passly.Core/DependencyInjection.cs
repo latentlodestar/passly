@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Passly.Abstractions.Interfaces;
-using Passly.Core.Ingest;
-using Passly.Core.Modeling;
+using Passly.Core.ChatImports;
+using Passly.Core.Submissions;
 using Passly.Core.Services;
 using Passly.Core.Status;
 

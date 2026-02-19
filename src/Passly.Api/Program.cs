@@ -2,7 +2,7 @@ using Amazon.SQS;
 using Passly.Abstractions.Contracts;
 using Passly.Api.Endpoints;
 using Passly.Core;
-using Passly.Core.Ingest;
+using Passly.Core.ChatImports;
 using Passly.Infrastructure;
 using Passly.Persistence;
 using Rebus.Config;
