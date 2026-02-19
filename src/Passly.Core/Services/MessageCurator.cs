@@ -18,18 +18,12 @@ internal sealed class MessageCurator : IMessageCurator
             return new CurationResult([], []);
 
         if (messages.Count <= options.TargetCount)
-        {
-            var all = messages.Select(m => new CuratedMessage(
-                m.Id, m.SenderName, m.Content, m.Timestamp, m.MessageIndex,
-                FormatTimeWindow(m.Timestamp), 1.0f)).ToList();
-            var gaps = DetectGaps(messages);
-            return new CurationResult(all, gaps);
-        }
+            return ReturnAll(messages);
 
         // Phase 1: Time-window segmentation
         var windows = SegmentIntoWindows(messages);
         var budgets = AllocateBudgets(windows, options.TargetCount);
-        var gaps1 = DetectGapsFromWindows(windows);
+        var gaps = DetectGapsFromWindows(windows);
 
         // Phase 2 & 3: Per-window embedding, clustering, and selection
         var selected = new List<CuratedMessage>();
@@ -47,31 +41,110 @@ internal sealed class MessageCurator : IMessageCurator
 
             if (window.Messages.Count <= budget)
             {
-                foreach (var msg in window.Messages)
-                {
-                    selected.Add(new CuratedMessage(
-                        msg.Id, msg.SenderName, msg.Content, msg.Timestamp,
-                        msg.MessageIndex, window.Label, 1.0f));
-                }
+                AddAllFromWindow(window, selected);
                 continue;
             }
 
             var texts = window.Messages.Select(m => m.Content).ToList();
-            var embeddings = await embeddingService.GenerateEmbeddingsAsync(texts, ct);
+            var windowEmbeddings = await embeddingService.GenerateEmbeddingsAsync(texts, ct);
 
-            var representatives = SelectRepresentatives(
-                window.Messages, embeddings, budget, window.Label,
-                messages, selectedEmbeddings);
-
-            foreach (var (msg, embedding) in representatives)
-            {
-                selected.Add(msg);
-                selectedEmbeddings.Add(embedding);
-            }
+            AddRepresentatives(window, windowEmbeddings, budget, messages, selected, selectedEmbeddings);
         }
 
         selected.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
-        return new CurationResult(selected, gaps1);
+        return new CurationResult(selected, gaps);
+    }
+
+    public Task<CurationResult> CurateAsync(
+        IReadOnlyList<DecryptedMessage> messages,
+        float[][] embeddings,
+        CurationOptions options,
+        CancellationToken ct = default)
+    {
+        if (messages.Count == 0)
+            return Task.FromResult(new CurationResult([], []));
+
+        if (messages.Count <= options.TargetCount)
+            return Task.FromResult(ReturnAll(messages));
+
+        // Build lookup from message Id to index in the pre-computed embeddings array
+        var embeddingIndex = new Dictionary<Guid, int>(messages.Count);
+        for (var i = 0; i < messages.Count; i++)
+            embeddingIndex[messages[i].Id] = i;
+
+        // Phase 1: Time-window segmentation
+        var windows = SegmentIntoWindows(messages);
+        var budgets = AllocateBudgets(windows, options.TargetCount);
+        var gaps = DetectGapsFromWindows(windows);
+
+        // Phase 2 & 3: Per-window selection using pre-computed embeddings
+        var selected = new List<CuratedMessage>();
+        var selectedEmbeddings = new List<float[]>();
+
+        for (var i = 0; i < windows.Count; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var window = windows[i];
+            var budget = budgets[i];
+
+            if (window.Messages.Count == 0 || budget == 0)
+                continue;
+
+            if (window.Messages.Count <= budget)
+            {
+                AddAllFromWindow(window, selected);
+                continue;
+            }
+
+            // Slice pre-computed embeddings for this window's messages
+            var windowEmbeddings = window.Messages
+                .Select(m => embeddings[embeddingIndex[m.Id]])
+                .ToArray();
+
+            AddRepresentatives(window, windowEmbeddings, budget, messages, selected, selectedEmbeddings);
+        }
+
+        selected.Sort((a, b) => a.Timestamp.CompareTo(b.Timestamp));
+        return Task.FromResult(new CurationResult(selected, gaps));
+    }
+
+    private static CurationResult ReturnAll(IReadOnlyList<DecryptedMessage> messages)
+    {
+        var all = messages.Select(m => new CuratedMessage(
+            m.Id, m.SenderName, m.Content, m.Timestamp, m.MessageIndex,
+            FormatTimeWindow(m.Timestamp), 1.0f)).ToList();
+        var gaps = DetectGaps(messages);
+        return new CurationResult(all, gaps);
+    }
+
+    private static void AddAllFromWindow(TimeWindow window, List<CuratedMessage> selected)
+    {
+        foreach (var msg in window.Messages)
+        {
+            selected.Add(new CuratedMessage(
+                msg.Id, msg.SenderName, msg.Content, msg.Timestamp,
+                msg.MessageIndex, window.Label, 1.0f));
+        }
+    }
+
+    private static void AddRepresentatives(
+        TimeWindow window,
+        float[][] windowEmbeddings,
+        int budget,
+        IReadOnlyList<DecryptedMessage> allMessages,
+        List<CuratedMessage> selected,
+        List<float[]> selectedEmbeddings)
+    {
+        var representatives = SelectRepresentatives(
+            window.Messages, windowEmbeddings, budget, window.Label,
+            allMessages, selectedEmbeddings);
+
+        foreach (var (msg, embedding) in representatives)
+        {
+            selected.Add(msg);
+            selectedEmbeddings.Add(embedding);
+        }
     }
 
     private static List<TimeWindow> SegmentIntoWindows(IReadOnlyList<DecryptedMessage> messages)

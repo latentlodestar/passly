@@ -13,6 +13,7 @@ public sealed class ParseChatImportHandlerTests : IDisposable
 {
     private readonly AppDbContext _db;
     private readonly IEncryptionService _encryption;
+    private readonly IEmbeddingService _embeddingService;
     private readonly IClock _clock;
     private readonly ParseChatImportHandler _sut;
     private readonly DateTimeOffset _now = new(2025, 6, 1, 0, 0, 0, TimeSpan.Zero);
@@ -38,11 +39,19 @@ public sealed class ParseChatImportHandlerTests : IDisposable
         _encryption.Decrypt(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<byte[]>(), Arg.Any<byte[]>())
             .Returns(ci => (byte[])ci[0]);
 
+        _embeddingService = Substitute.For<IEmbeddingService>();
+        _embeddingService.GenerateEmbeddingsAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(ci =>
+            {
+                var texts = ci.ArgAt<IReadOnlyList<string>>(0);
+                return Task.FromResult(texts.Select(_ => new float[384]).ToArray());
+            });
+
         _clock = Substitute.For<IClock>();
         _clock.UtcNow.Returns(_now);
 
         var parser = new WhatsAppChatParser();
-        _sut = new ParseChatImportHandler(_db, _encryption, parser, _clock, NullLogger<ParseChatImportHandler>.Instance);
+        _sut = new ParseChatImportHandler(_db, _encryption, _embeddingService, parser, _clock, NullLogger<ParseChatImportHandler>.Instance);
     }
 
     [Fact]

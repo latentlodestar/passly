@@ -3,6 +3,8 @@ var builder = DistributedApplication.CreateBuilder(args);
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
 
 var postgres = builder.AddPostgres("postgres", password: postgresPassword)
+    .WithImage("pgvector/pgvector")
+    .WithImageTag("pg17")
     .WithHostPort(5439)
     .WithDataVolume();
 

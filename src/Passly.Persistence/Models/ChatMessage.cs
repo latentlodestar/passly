@@ -14,4 +14,5 @@ public sealed class ChatMessage
     public DateTimeOffset CreatedAt { get; set; }
 
     public ChatImport ChatImport { get; set; } = null!;
+    public ChatMessageEmbedding? Embedding { get; set; }
 }

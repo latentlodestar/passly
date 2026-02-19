@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<GenerateSubmissionSummaryHandler>();
         services.AddScoped<GetSubmissionSummaryHandler>();
         services.AddScoped<GetSubmissionSummaryMetadataHandler>();
+        services.AddScoped<GetSubmissionSummaryContentHandler>();
 
         // Embedding & curation
         services.AddSingleton<IEmbeddingService>(sp =>

@@ -11,7 +11,6 @@ namespace Passly.Core.Submissions;
 public sealed class GenerateSubmissionSummaryHandler(
     AppDbContext db,
     IEncryptionService encryption,
-    IEmbeddingService embeddings,
     IMessageCurator curator,
     ISummaryPdfGenerator pdfGenerator,
     IClock clock)
@@ -44,14 +43,17 @@ public sealed class GenerateSubmissionSummaryHandler(
 
         // Decrypt messages
         var encryptedMessages = await db.ChatMessages
+            .Include(m => m.Embedding)
             .Where(m => m.ChatImportId == request.ChatImportId)
             .OrderBy(m => m.MessageIndex)
             .ToListAsync(ct);
 
         var decrypted = new List<DecryptedMessage>(encryptedMessages.Count);
+        var precomputedEmbeddings = new float[encryptedMessages.Count][];
 
-        foreach (var msg in encryptedMessages)
+        for (var i = 0; i < encryptedMessages.Count; i++)
         {
+            var msg = encryptedMessages[i];
             var decryptedBytes = encryption.Decrypt(
                 msg.EncryptedContent, request.Passphrase, msg.Salt, msg.Iv, msg.Tag);
             var payload = JsonSerializer.Deserialize<MessagePayload>(
@@ -63,11 +65,13 @@ public sealed class GenerateSubmissionSummaryHandler(
                 payload?.Content ?? "",
                 msg.Timestamp,
                 msg.MessageIndex));
+
+            precomputedEmbeddings[i] = msg.Embedding!.Embedding.ToArray();
         }
 
         // Curate messages
         var curationResult = await curator.CurateAsync(
-            decrypted, embeddings, new CurationOptions(200), ct);
+            decrypted, precomputedEmbeddings, new CurationOptions(200), ct);
 
         // Build PDF data
         var messageCountByWindow = curationResult.Messages
@@ -85,8 +89,28 @@ public sealed class GenerateSubmissionSummaryHandler(
 
         var pdfBytes = pdfGenerator.Generate(pdfData);
 
-        // Encrypt PDF
+        // Build structured content for in-app review
+        var contentResponse = new SummaryContentResponse(
+            submission.Label,
+            pdfData.EarliestMessage,
+            pdfData.LatestMessage,
+            pdfData.TotalMessages,
+            curationResult.Messages
+                .OrderBy(m => m.Timestamp)
+                .Select(m => new SummaryMessageResponse(
+                    m.SenderName, m.Content, m.Timestamp, m.TimeWindow))
+                .ToList(),
+            curationResult.Gaps
+                .OrderBy(g => g.Start)
+                .Select(g => new SummaryGapResponse(g.Start, g.End, g.Duration.Days))
+                .ToList(),
+            messageCountByWindow);
+
+        var contentJson = JsonSerializer.SerializeToUtf8Bytes(contentResponse);
+
+        // Encrypt PDF and content separately
         var encResult = encryption.Encrypt(pdfBytes, request.Passphrase);
+        var contentEncResult = encryption.Encrypt(contentJson, request.Passphrase);
 
         var summary = new SubmissionSummary
         {
@@ -97,6 +121,10 @@ public sealed class GenerateSubmissionSummaryHandler(
             Salt = encResult.Salt,
             Iv = encResult.Iv,
             Tag = encResult.Tag,
+            EncryptedContent = contentEncResult.Ciphertext,
+            ContentSalt = contentEncResult.Salt,
+            ContentIv = contentEncResult.Iv,
+            ContentTag = contentEncResult.Tag,
             TotalMessages = decrypted.Count,
             SelectedMessages = curationResult.Messages.Count,
             GapCount = curationResult.Gaps.Count,

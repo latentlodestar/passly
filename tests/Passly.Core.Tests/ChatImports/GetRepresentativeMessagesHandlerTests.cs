@@ -4,6 +4,7 @@ using Passly.Abstractions.Interfaces;
 using Passly.Core.ChatImports;
 using Passly.Persistence;
 using Passly.Persistence.Models;
+using Pgvector;
 using System.Text;
 using System.Text.Json;
 
@@ -13,7 +14,6 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
 {
     private readonly AppDbContext _db;
     private readonly IEncryptionService _encryption;
-    private readonly IEmbeddingService _embeddings;
     private readonly IMessageCurator _curator;
     private readonly GetRepresentativeMessagesHandler _sut;
 
@@ -28,10 +28,9 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
         _db = new AppDbContext(options);
 
         _encryption = Substitute.For<IEncryptionService>();
-        _embeddings = Substitute.For<IEmbeddingService>();
         _curator = Substitute.For<IMessageCurator>();
 
-        _sut = new GetRepresentativeMessagesHandler(_db, _encryption, _embeddings, _curator);
+        _sut = new GetRepresentativeMessagesHandler(_db, _encryption, _curator);
     }
 
     [Fact]
@@ -87,7 +86,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
 
         _curator.CurateAsync(
                 Arg.Any<IReadOnlyList<DecryptedMessage>>(),
-                Arg.Any<IEmbeddingService>(),
+                Arg.Any<float[][]>(),
                 Arg.Any<CurationOptions>(),
                 Arg.Any<CancellationToken>())
             .Returns(curationResult);
@@ -112,7 +111,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
 
         _curator.CurateAsync(
                 Arg.Any<IReadOnlyList<DecryptedMessage>>(),
-                Arg.Any<IEmbeddingService>(),
+                Arg.Any<float[][]>(),
                 Arg.Any<CurationOptions>(),
                 Arg.Any<CancellationToken>())
             .Returns(new CurationResult([], []));
@@ -121,7 +120,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
 
         await _curator.Received(1).CurateAsync(
             Arg.Any<IReadOnlyList<DecryptedMessage>>(),
-            Arg.Any<IEmbeddingService>(),
+            Arg.Any<float[][]>(),
             Arg.Is<CurationOptions>(o => o.TargetCount == 42),
             Arg.Any<CancellationToken>());
     }
@@ -135,7 +134,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
 
         _curator.CurateAsync(
                 Arg.Any<IReadOnlyList<DecryptedMessage>>(),
-                Arg.Any<IEmbeddingService>(),
+                Arg.Any<float[][]>(),
                 Arg.Any<CurationOptions>(),
                 Arg.Any<CancellationToken>())
             .Returns(new CurationResult([], []));
@@ -178,9 +177,10 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
     {
         for (var i = 0; i < count; i++)
         {
+            var msgId = Guid.NewGuid();
             _db.ChatMessages.Add(new ChatMessage
             {
-                Id = Guid.NewGuid(),
+                Id = msgId,
                 ChatImportId = importId,
                 EncryptedSenderName = [1],
                 EncryptedContent = [1, 2, 3],
@@ -189,6 +189,13 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
                 Tag = new byte[16],
                 Timestamp = DateTimeOffset.UtcNow.AddHours(i),
                 MessageIndex = i,
+                CreatedAt = DateTimeOffset.UtcNow,
+            });
+            _db.ChatMessageEmbeddings.Add(new ChatMessageEmbedding
+            {
+                Id = Guid.NewGuid(),
+                ChatMessageId = msgId,
+                Embedding = new Vector(new float[384]),
                 CreatedAt = DateTimeOffset.UtcNow,
             });
         }

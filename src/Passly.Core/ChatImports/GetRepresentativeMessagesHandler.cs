@@ -10,7 +10,6 @@ namespace Passly.Core.ChatImports;
 public sealed class GetRepresentativeMessagesHandler(
     AppDbContext db,
     IEncryptionService encryption,
-    IEmbeddingService embeddings,
     IMessageCurator curator)
 {
     public async Task<(RepresentativeMessagesResponse? Response, GetRepresentativeMessagesError? Error)> HandleAsync(
@@ -32,14 +31,17 @@ public sealed class GetRepresentativeMessagesHandler(
             return (null, GetRepresentativeMessagesError.NotParsed);
 
         var encryptedMessages = await db.ChatMessages
+            .Include(m => m.Embedding)
             .Where(m => m.ChatImportId == chatImportId)
             .OrderBy(m => m.MessageIndex)
             .ToListAsync(ct);
 
         var decrypted = new List<DecryptedMessage>(encryptedMessages.Count);
+        var precomputedEmbeddings = new float[encryptedMessages.Count][];
 
-        foreach (var msg in encryptedMessages)
+        for (var i = 0; i < encryptedMessages.Count; i++)
         {
+            var msg = encryptedMessages[i];
             var decryptedBytes = encryption.Decrypt(
                 msg.EncryptedContent, passphrase, msg.Salt, msg.Iv, msg.Tag);
             var payload = JsonSerializer.Deserialize<MessagePayload>(
@@ -51,10 +53,12 @@ public sealed class GetRepresentativeMessagesHandler(
                 payload?.Content ?? "",
                 msg.Timestamp,
                 msg.MessageIndex));
+
+            precomputedEmbeddings[i] = msg.Embedding!.Embedding.ToArray();
         }
 
         var result = await curator.CurateAsync(
-            decrypted, embeddings, new CurationOptions(targetCount), ct);
+            decrypted, precomputedEmbeddings, new CurationOptions(targetCount), ct);
 
         var response = new RepresentativeMessagesResponse(
             chatImportId,

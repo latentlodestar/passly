@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Passly.Persistence;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace Passly.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260219012148_AddChatMessageEmbeddings")]
+    partial class AddChatMessageEmbeddings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -208,24 +211,8 @@ namespace Passly.Persistence.Migrations
                     b.Property<Guid>("ChatImportId")
                         .HasColumnType("uuid");
 
-                    b.Property<byte[]>("ContentIv")
-                        .IsRequired()
-                        .HasColumnType("bytea");
-
-                    b.Property<byte[]>("ContentSalt")
-                        .IsRequired()
-                        .HasColumnType("bytea");
-
-                    b.Property<byte[]>("ContentTag")
-                        .IsRequired()
-                        .HasColumnType("bytea");
-
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<byte[]>("EncryptedContent")
-                        .IsRequired()
-                        .HasColumnType("bytea");
 
                     b.Property<byte[]>("EncryptedPdf")
                         .IsRequired()

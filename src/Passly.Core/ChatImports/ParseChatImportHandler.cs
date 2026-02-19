@@ -12,6 +12,7 @@ namespace Passly.Core.ChatImports;
 public sealed class ParseChatImportHandler(
     AppDbContext db,
     IEncryptionService encryption,
+    IEmbeddingService embeddingService,
     WhatsAppChatParser parser,
     IClock clock,
     ILogger<ParseChatImportHandler> logger)
@@ -48,6 +49,9 @@ public sealed class ParseChatImportHandler(
 
             var now = clock.UtcNow;
 
+            var entities = new List<ChatMessage>(messages.Count);
+            var plaintextContents = new List<string>(messages.Count);
+
             foreach (var msg in messages)
             {
                 var payload = JsonSerializer.Serialize(new { msg.SenderName, msg.Content });
@@ -69,6 +73,21 @@ public sealed class ParseChatImportHandler(
                 };
 
                 db.ChatMessages.Add(entity);
+                entities.Add(entity);
+                plaintextContents.Add(msg.Content);
+            }
+
+            var embeddings = await embeddingService.GenerateEmbeddingsAsync(plaintextContents, ct);
+
+            for (var i = 0; i < entities.Count; i++)
+            {
+                db.ChatMessageEmbeddings.Add(new ChatMessageEmbedding
+                {
+                    Id = Guid.NewGuid(),
+                    ChatMessageId = entities[i].Id,
+                    Embedding = new Pgvector.Vector(embeddings[i]),
+                    CreatedAt = now,
+                });
             }
 
             import.Status = ChatImportStatus.Parsed;

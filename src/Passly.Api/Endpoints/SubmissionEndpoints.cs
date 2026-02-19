@@ -113,6 +113,34 @@ public static class SubmissionEndpoints
         .WithName("GetSubmissionSummary")
         .WithTags("Submissions");
 
+        app.MapGet("/api/submissions/{id:guid}/summary/content", async (
+            Guid id,
+            string deviceId,
+            string passphrase,
+            GetSubmissionSummaryContentHandler handler,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(deviceId))
+                return Results.BadRequest(new { error = "deviceId is required." });
+
+            if (string.IsNullOrWhiteSpace(passphrase))
+                return Results.BadRequest(new { error = "passphrase is required." });
+
+            var (content, error) = await handler.HandleAsync(id, deviceId, passphrase, ct);
+
+            return error switch
+            {
+                GetSubmissionSummaryError.SubmissionNotFound => Results.NotFound(),
+                GetSubmissionSummaryError.SummaryNotFound => Results.NotFound(),
+                GetSubmissionSummaryError.WrongPassphrase =>
+                    Results.Unauthorized(),
+                null => Results.Ok(content),
+                _ => Results.StatusCode(500),
+            };
+        })
+        .WithName("GetSubmissionSummaryContent")
+        .WithTags("Submissions");
+
         app.MapGet("/api/submissions/{id:guid}/summary/download", async (
             Guid id,
             string deviceId,

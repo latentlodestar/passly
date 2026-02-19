@@ -18,6 +18,10 @@ internal sealed class SubmissionSummaryConfiguration : IEntityTypeConfiguration<
         builder.Property(e => e.Salt).IsRequired();
         builder.Property(e => e.Iv).IsRequired();
         builder.Property(e => e.Tag).IsRequired();
+        builder.Property(e => e.EncryptedContent).IsRequired();
+        builder.Property(e => e.ContentSalt).IsRequired();
+        builder.Property(e => e.ContentIv).IsRequired();
+        builder.Property(e => e.ContentTag).IsRequired();
 
         builder.HasIndex(e => e.SubmissionId).IsUnique();
 

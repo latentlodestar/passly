@@ -9,6 +9,7 @@ import type {
   UpdateSubmissionStepRequest,
   GenerateSubmissionSummaryRequest,
   SubmissionSummaryResponse,
+  SummaryContentResponse,
 } from "../types";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:5192";
@@ -87,6 +88,16 @@ export const api = createApi({
         { type: "SubmissionSummary", id },
       ],
     }),
+    getSubmissionSummaryContent: builder.query<
+      SummaryContentResponse,
+      { id: string; deviceId: string; passphrase: string }
+    >({
+      query: ({ id, deviceId, passphrase }) =>
+        `/api/submissions/${id}/summary/content?deviceId=${encodeURIComponent(deviceId)}&passphrase=${encodeURIComponent(passphrase)}`,
+      providesTags: (_result, _err, { id }) => [
+        { type: "SubmissionSummary", id },
+      ],
+    }),
   }),
 });
 
@@ -101,4 +112,5 @@ export const {
   useUpdateSubmissionStepMutation,
   useGenerateSubmissionSummaryMutation,
   useGetSubmissionSummaryQuery,
+  useGetSubmissionSummaryContentQuery,
 } = api;

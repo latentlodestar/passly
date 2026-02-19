@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -15,6 +15,7 @@ import { usePassphrase } from '@/hooks/use-passphrase';
 import {
   useGetChatImportsQuery,
   useGetSubmissionSummaryQuery,
+  useGetSubmissionSummaryContentQuery,
   useGenerateSubmissionSummaryMutation,
 } from '@/api/api';
 import { Button } from '@/components/ui/Button';
@@ -22,7 +23,7 @@ import { Stepper } from '@/components/ui/Stepper';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
 import { SettingsFab } from '@/components/ui/AppHeader';
-import type { ChatImportSummaryResponse } from '@/types';
+import type { ChatImportSummaryResponse, SummaryMessageResponse } from '@/types';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:5192';
 
@@ -33,7 +34,7 @@ const processSteps = [
 ];
 
 /* ------------------------------------------------------------------ */
-/*  Stat row                                                           */
+/*  Small components                                                    */
 /* ------------------------------------------------------------------ */
 
 function StatRow({ label, value, t }: { label: string; value: string; t: (typeof colors)[keyof typeof colors] }) {
@@ -58,6 +59,203 @@ const statStyles = StyleSheet.create({
   value: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
+  },
+});
+
+function SectionHeader({ icon, title, t }: {
+  icon: keyof typeof MaterialIcons.glyphMap;
+  title: string;
+  t: (typeof colors)[keyof typeof colors];
+}) {
+  return (
+    <View style={sectionStyles.header}>
+      <MaterialIcons name={icon} size={18} color={t.primary} />
+      <Text style={[sectionStyles.title, { color: t.fg }]}>{title}</Text>
+    </View>
+  );
+}
+
+const sectionStyles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  title: {
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+  },
+});
+
+function GapRow({ start, end, days, t }: {
+  start: string;
+  end: string;
+  days: number;
+  t: (typeof colors)[keyof typeof colors];
+}) {
+  return (
+    <View style={[gapStyles.row, { backgroundColor: t.warningSubtle, borderColor: t.border }]}>
+      <View style={gapStyles.dates}>
+        <Text style={[gapStyles.date, { color: t.fg }]}>{start}</Text>
+        <MaterialIcons name="arrow-forward" size={12} color={t.muted} />
+        <Text style={[gapStyles.date, { color: t.fg }]}>{end}</Text>
+      </View>
+      <Text style={[gapStyles.duration, { color: t.warningText }]}>{days} days</Text>
+    </View>
+  );
+}
+
+const gapStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  dates: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  date: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+  duration: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
+});
+
+function MessageRow({ msg, t }: {
+  msg: SummaryMessageResponse;
+  t: (typeof colors)[keyof typeof colors];
+}) {
+  const date = new Date(msg.timestamp).toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric',
+  });
+
+  return (
+    <View style={[msgStyles.row, { borderLeftColor: t.primary }]}>
+      <View style={msgStyles.meta}>
+        <Text style={[msgStyles.sender, { color: t.fg }]}>{msg.senderName}</Text>
+        <Text style={[msgStyles.date, { color: t.muted }]}>{date}</Text>
+      </View>
+      <Text style={[msgStyles.content, { color: t.fg2 }]} numberOfLines={3}>
+        {msg.content}
+      </Text>
+    </View>
+  );
+}
+
+const msgStyles = StyleSheet.create({
+  row: {
+    borderLeftWidth: 2,
+    paddingLeft: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  meta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  sender: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
+  date: {
+    fontSize: fontSize.xs,
+  },
+  content: {
+    fontSize: fontSize.xs,
+    lineHeight: 18,
+  },
+});
+
+function TimeWindowSection({ windowLabel, messages, t }: {
+  windowLabel: string;
+  messages: SummaryMessageResponse[];
+  t: (typeof colors)[keyof typeof colors];
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const preview = messages.slice(0, 2);
+  const hasMore = messages.length > 2;
+
+  return (
+    <View style={[twStyles.section, { backgroundColor: t.surface, borderColor: t.border }]}>
+      <Pressable
+        onPress={() => setExpanded((v) => !v)}
+        style={twStyles.header}
+      >
+        <View style={twStyles.headerLeft}>
+          <MaterialIcons
+            name={expanded ? 'expand-less' : 'expand-more'}
+            size={20}
+            color={t.muted}
+          />
+          <Text style={[twStyles.label, { color: t.fg }]}>{windowLabel}</Text>
+        </View>
+        <Text style={[twStyles.count, { color: t.muted }]}>
+          {messages.length} {messages.length === 1 ? 'msg' : 'msgs'}
+        </Text>
+      </Pressable>
+
+      <View style={twStyles.body}>
+        {(expanded ? messages : preview).map((msg, i) => (
+          <MessageRow key={`${msg.timestamp}-${i}`} msg={msg} t={t} />
+        ))}
+        {!expanded && hasMore && (
+          <Pressable onPress={() => setExpanded(true)}>
+            <Text style={[twStyles.showMore, { color: t.primary }]}>
+              Show {messages.length - 2} more...
+            </Text>
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+}
+
+const twStyles = StyleSheet.create({
+  section: {
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flex: 1,
+  },
+  label: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  count: {
+    fontSize: fontSize.xs,
+  },
+  body: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  showMore: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    paddingTop: spacing.xs,
   },
 });
 
@@ -98,11 +296,42 @@ export default function SummaryScreen() {
     { skip: !activeSubmissionId || !deviceId },
   );
 
+  // Fetch full summary content when we have a summary and passphrase
+  const hasSummary = !!summaryMeta;
+  const {
+    data: summaryContent,
+    isLoading: isLoadingContent,
+  } = useGetSubmissionSummaryContentQuery(
+    {
+      id: activeSubmissionId ?? '',
+      deviceId: deviceId ?? '',
+      passphrase: passphrase ?? '',
+    },
+    { skip: !hasSummary || !activeSubmissionId || !deviceId || !passphrase },
+  );
+
+  // Group messages by time window
+  const messageGroups = useMemo(() => {
+    if (!summaryContent?.representativeMessages) return [];
+    const groups = new Map<string, SummaryMessageResponse[]>();
+    for (const msg of summaryContent.representativeMessages) {
+      const existing = groups.get(msg.timeWindow);
+      if (existing) {
+        existing.push(msg);
+      } else {
+        groups.set(msg.timeWindow, [msg]);
+      }
+    }
+    return Array.from(groups.entries()).map(([window, msgs]) => ({
+      window,
+      messages: msgs,
+    }));
+  }, [summaryContent?.representativeMessages]);
+
   const [generateSummary] = useGenerateSubmissionSummaryMutation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
-  const hasSummary = !!summaryMeta;
   const noPassphrase = passphraseLoaded && !passphrase;
   const noParsedImport = !parsedImport && !isLoadingMeta;
 
@@ -151,6 +380,13 @@ export default function SummaryScreen() {
     await WebBrowser.openBrowserAsync(url);
   }, [activeSubmissionId, deviceId, passphrase]);
 
+  /* ---- Date formatting ---- */
+
+  const fmtDate = (iso: string) =>
+    new Date(iso).toLocaleDateString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric',
+    });
+
   /* ---- Render ---- */
 
   return (
@@ -168,7 +404,9 @@ export default function SummaryScreen() {
 
         <Text style={[styles.title, { color: t.fg }]}>Communication Summary</Text>
         <Text style={[styles.subtitle, { color: t.fg2 }]}>
-          Generate a structured PDF report of your relationship communication history.
+          {hasSummary
+            ? 'Review your communication analysis below, or download the full PDF report.'
+            : 'Generate a structured report of your relationship communication history.'}
         </Text>
 
         {/* Passphrase warning */}
@@ -224,12 +462,21 @@ export default function SummaryScreen() {
         {/* Summary exists */}
         {!isLoadingMeta && hasSummary && (
           <View style={styles.summarySection}>
+
+            {/* Overview card */}
             <Card status="ok">
-              <CardHeader>Summary Report</CardHeader>
+              <CardHeader>Communication Overview</CardHeader>
               <CardBody>
                 <StatRow label="Total messages" value={summaryMeta.totalMessages.toLocaleString()} t={t} />
                 <StatRow label="Selected messages" value={summaryMeta.selectedMessages.toLocaleString()} t={t} />
                 <StatRow label="Communication gaps" value={summaryMeta.gapCount.toLocaleString()} t={t} />
+                {summaryContent && (
+                  <StatRow
+                    label="Date range"
+                    value={`${fmtDate(summaryContent.earliestMessage)} — ${fmtDate(summaryContent.latestMessage)}`}
+                    t={t}
+                  />
+                )}
                 <StatRow
                   label="Generated"
                   value={new Date(summaryMeta.createdAt).toLocaleDateString()}
@@ -238,6 +485,57 @@ export default function SummaryScreen() {
               </CardBody>
             </Card>
 
+            {/* Content loading */}
+            {isLoadingContent && (
+              <View style={styles.centered}>
+                <ActivityIndicator size="small" color={t.primary} />
+                <Text style={[styles.loadingText, { color: t.muted }]}>Loading report details...</Text>
+              </View>
+            )}
+
+            {/* Communication Gaps */}
+            {summaryContent && summaryContent.gaps.length > 0 && (
+              <View>
+                <SectionHeader icon="warning-amber" title="Communication Gaps" t={t} />
+                <Text style={[styles.sectionDesc, { color: t.fg2 }]}>
+                  Periods of 7+ days with no messages. These may be flagged during review.
+                </Text>
+                <View style={styles.gapList}>
+                  {summaryContent.gaps.map((gap, i) => (
+                    <GapRow
+                      key={i}
+                      start={fmtDate(gap.start)}
+                      end={fmtDate(gap.end)}
+                      days={gap.durationDays}
+                      t={t}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Representative Messages */}
+            {summaryContent && messageGroups.length > 0 && (
+              <View>
+                <SectionHeader icon="forum" title="Representative Messages" t={t} />
+                <Text style={[styles.sectionDesc, { color: t.fg2 }]}>
+                  {summaryMeta.selectedMessages.toLocaleString()} messages selected from{' '}
+                  {summaryMeta.totalMessages.toLocaleString()} to demonstrate communication patterns.
+                </Text>
+                <View style={styles.messageGroupList}>
+                  {messageGroups.map(({ window, messages }) => (
+                    <TimeWindowSection
+                      key={window}
+                      windowLabel={window}
+                      messages={messages}
+                      t={t}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Download PDF */}
             <Button
               label="Download PDF"
               variant="secondary"
@@ -360,7 +658,22 @@ const styles = StyleSheet.create({
 
   /* Summary */
   summarySection: {
-    gap: spacing.base,
+    gap: spacing.xl,
+  },
+  sectionDesc: {
+    fontSize: fontSize.xs,
+    lineHeight: 18,
+    marginBottom: spacing.md,
+  },
+  gapList: {
+    gap: spacing.sm,
+  },
+  messageGroupList: {
+    gap: spacing.md,
+  },
+  loadingText: {
+    fontSize: fontSize.sm,
+    marginTop: spacing.sm,
   },
 
   /* Center helper */

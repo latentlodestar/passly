@@ -7,6 +7,12 @@ public interface IMessageCurator
         IEmbeddingService embeddingService,
         CurationOptions options,
         CancellationToken ct = default);
+
+    Task<CurationResult> CurateAsync(
+        IReadOnlyList<DecryptedMessage> messages,
+        float[][] embeddings,
+        CurationOptions options,
+        CancellationToken ct = default);
 }
 
 public sealed record DecryptedMessage(

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute.ExceptionExtensions;
 using Passly.Abstractions.Contracts;
@@ -9,19 +10,19 @@ using Passly.Persistence.Models;
 
 namespace Passly.Core.Tests.Submissions;
 
-public sealed class GetSubmissionSummaryHandlerTests : IDisposable
+public sealed class GetSubmissionSummaryContentHandlerTests : IDisposable
 {
     private readonly AppDbContext _db;
     private readonly IEncryptionService _encryption = Substitute.For<IEncryptionService>();
-    private readonly GetSubmissionSummaryHandler _sut;
+    private readonly GetSubmissionSummaryContentHandler _sut;
 
-    public GetSubmissionSummaryHandlerTests()
+    public GetSubmissionSummaryContentHandlerTests()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase($"app-{Guid.NewGuid()}")
             .Options;
         _db = new AppDbContext(options);
-        _sut = new GetSubmissionSummaryHandler(_db, _encryption);
+        _sut = new GetSubmissionSummaryContentHandler(_db, _encryption);
     }
 
     public void Dispose() => _db.Dispose();
@@ -29,11 +30,10 @@ public sealed class GetSubmissionSummaryHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsync_SubmissionNotFound_ReturnsError()
     {
-        var (pdf, meta, error) = await _sut.HandleAsync(Guid.NewGuid(), "device-1", "pass");
+        var (content, error) = await _sut.HandleAsync(Guid.NewGuid(), "device-1", "pass");
 
         error.Should().Be(GetSubmissionSummaryError.SubmissionNotFound);
-        pdf.Should().BeNull();
-        meta.Should().BeNull();
+        content.Should().BeNull();
     }
 
     [Fact]
@@ -52,11 +52,10 @@ public sealed class GetSubmissionSummaryHandlerTests : IDisposable
         });
         await _db.SaveChangesAsync();
 
-        var (pdf, meta, error) = await _sut.HandleAsync(submissionId, "device-1", "pass");
+        var (content, error) = await _sut.HandleAsync(submissionId, "device-1", "pass");
 
         error.Should().Be(GetSubmissionSummaryError.SummaryNotFound);
-        pdf.Should().BeNull();
-        meta.Should().BeNull();
+        content.Should().BeNull();
     }
 
     [Fact]
@@ -96,28 +95,42 @@ public sealed class GetSubmissionSummaryHandlerTests : IDisposable
         _encryption.Decrypt(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<byte[]>(), Arg.Any<byte[]>())
             .Throws(new AuthenticationTagMismatchException());
 
-        var (pdf, meta, error) = await _sut.HandleAsync(submissionId, "device-1", "wrong");
+        var (content, error) = await _sut.HandleAsync(submissionId, "device-1", "wrong");
 
         error.Should().Be(GetSubmissionSummaryError.WrongPassphrase);
-        pdf.Should().BeNull();
+        content.Should().BeNull();
     }
 
     [Fact]
-    public async Task HandleAsync_HappyPath_ReturnsPdfBytesAndMetadata()
+    public async Task HandleAsync_HappyPath_ReturnsDecryptedContent()
     {
         var submissionId = Guid.NewGuid();
         var importId = Guid.NewGuid();
-        var expectedPdf = new byte[] { 0x25, 0x50, 0x44, 0x46 };
+        var now = DateTimeOffset.UtcNow;
+
+        var expectedContent = new SummaryContentResponse(
+            "My Submission",
+            now.AddDays(-30),
+            now,
+            100,
+            [
+                new SummaryMessageResponse("Alice", "Hello!", now.AddDays(-10), "2026-01-01 to 2026-01-07"),
+                new SummaryMessageResponse("Bob", "Hi there!", now.AddDays(-5), "2026-01-08 to 2026-01-14"),
+            ],
+            [new SummaryGapResponse(now.AddDays(-25), now.AddDays(-15), 10)],
+            new Dictionary<string, int> { ["2026-01-01 to 2026-01-07"] = 1, ["2026-01-08 to 2026-01-14"] = 1 });
+
+        var contentJson = JsonSerializer.SerializeToUtf8Bytes(expectedContent);
 
         _db.Submissions.Add(new Submission
         {
             Id = submissionId,
             DeviceId = "device-1",
-            Label = "Test",
+            Label = "My Submission",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
-            CreatedAt = DateTimeOffset.UtcNow,
-            UpdatedAt = DateTimeOffset.UtcNow,
+            CreatedAt = now,
+            UpdatedAt = now,
             Summary = new SubmissionSummary
             {
                 Id = Guid.NewGuid(),
@@ -132,24 +145,27 @@ public sealed class GetSubmissionSummaryHandlerTests : IDisposable
                 ContentIv = [8],
                 ContentTag = [9],
                 TotalMessages = 100,
-                SelectedMessages = 50,
-                GapCount = 2,
-                CreatedAt = DateTimeOffset.UtcNow,
+                SelectedMessages = 2,
+                GapCount = 1,
+                CreatedAt = now,
             },
         });
         await _db.SaveChangesAsync();
 
-        _encryption.Decrypt(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<byte[]>(), Arg.Any<byte[]>())
-            .Returns(expectedPdf);
+        _encryption.Decrypt(
+                Arg.Is<byte[]>(b => b.SequenceEqual(new byte[] { 4, 5, 6 })),
+                Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<byte[]>(), Arg.Any<byte[]>())
+            .Returns(contentJson);
 
-        var (pdf, meta, error) = await _sut.HandleAsync(submissionId, "device-1", "pass");
+        var (content, error) = await _sut.HandleAsync(submissionId, "device-1", "pass");
 
         error.Should().BeNull();
-        pdf.Should().BeEquivalentTo(expectedPdf);
-        meta.Should().NotBeNull();
-        meta!.SubmissionId.Should().Be(submissionId);
-        meta.TotalMessages.Should().Be(100);
-        meta.SelectedMessages.Should().Be(50);
-        meta.GapCount.Should().Be(2);
+        content.Should().NotBeNull();
+        content!.SubmissionLabel.Should().Be("My Submission");
+        content.TotalMessages.Should().Be(100);
+        content.RepresentativeMessages.Should().HaveCount(2);
+        content.Gaps.Should().HaveCount(1);
+        content.Gaps[0].DurationDays.Should().Be(10);
+        content.MessageCountByTimeWindow.Should().HaveCount(2);
     }
 }

@@ -9,6 +9,10 @@ public sealed class SubmissionSummary
     public required byte[] Salt { get; set; }
     public required byte[] Iv { get; set; }
     public required byte[] Tag { get; set; }
+    public required byte[] EncryptedContent { get; set; }
+    public required byte[] ContentSalt { get; set; }
+    public required byte[] ContentIv { get; set; }
+    public required byte[] ContentTag { get; set; }
     public int TotalMessages { get; set; }
     public int SelectedMessages { get; set; }
     public int GapCount { get; set; }

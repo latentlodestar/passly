@@ -73,3 +73,26 @@ export interface SubmissionSummaryResponse {
   gapCount: number;
   createdAt: string;
 }
+
+export interface SummaryContentResponse {
+  submissionLabel: string;
+  earliestMessage: string;
+  latestMessage: string;
+  totalMessages: number;
+  representativeMessages: SummaryMessageResponse[];
+  gaps: SummaryGapResponse[];
+  messageCountByTimeWindow: Record<string, number>;
+}
+
+export interface SummaryMessageResponse {
+  senderName: string;
+  content: string;
+  timestamp: string;
+  timeWindow: string;
+}
+
+export interface SummaryGapResponse {
+  start: string;
+  end: string;
+  durationDays: number;
+}

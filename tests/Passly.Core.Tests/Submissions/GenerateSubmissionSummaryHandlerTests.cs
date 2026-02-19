@@ -11,7 +11,6 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
 {
     private readonly AppDbContext _db;
     private readonly IEncryptionService _encryption = Substitute.For<IEncryptionService>();
-    private readonly IEmbeddingService _embeddings = Substitute.For<IEmbeddingService>();
     private readonly IMessageCurator _curator = Substitute.For<IMessageCurator>();
     private readonly ISummaryPdfGenerator _pdfGenerator = Substitute.For<ISummaryPdfGenerator>();
     private readonly IClock _clock = Substitute.For<IClock>();
@@ -27,7 +26,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         _clock.UtcNow.Returns(DateTimeOffset.UtcNow);
 
         _sut = new GenerateSubmissionSummaryHandler(
-            _db, _encryption, _embeddings, _curator, _pdfGenerator, _clock);
+            _db, _encryption, _curator, _pdfGenerator, _clock);
     }
 
     public void Dispose()
@@ -68,6 +67,10 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
                 Salt = [1],
                 Iv = [2],
                 Tag = [3],
+                EncryptedContent = [4, 5, 6],
+                ContentSalt = [7],
+                ContentIv = [8],
+                ContentTag = [9],
                 TotalMessages = 10,
                 SelectedMessages = 5,
                 GapCount = 0,
@@ -190,7 +193,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         // No chat messages — curation returns empty
         _curator.CurateAsync(
                 Arg.Any<IReadOnlyList<DecryptedMessage>>(),
-                Arg.Any<IEmbeddingService>(),
+                Arg.Any<float[][]>(),
                 Arg.Any<CurationOptions>(),
                 Arg.Any<CancellationToken>())
             .Returns(new CurationResult([], []));
@@ -215,5 +218,10 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         var persisted = await _db.SubmissionSummaries.FirstOrDefaultAsync();
         persisted.Should().NotBeNull();
         persisted!.SubmissionId.Should().Be(submissionId);
+        persisted.EncryptedContent.Should().NotBeEmpty();
+        persisted.ContentSalt.Should().NotBeEmpty();
+
+        // Encrypt called twice: once for PDF, once for content JSON
+        _encryption.Received(2).Encrypt(Arg.Any<byte[]>(), Arg.Any<string>());
     }
 }

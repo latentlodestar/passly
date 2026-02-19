@@ -1,8 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Passly.Abstractions.Interfaces;
 using Passly.Persistence.Services;
+using Pgvector.EntityFrameworkCore;
 
 namespace Passly.Persistence;
 
@@ -13,7 +15,8 @@ public static class DependencyInjection
     {
         AppendDbPasswordIfPresent(builder, connectionName);
 
-        builder.AddNpgsqlDbContext<AppDbContext>(connectionName);
+        builder.AddNpgsqlDbContext<AppDbContext>(connectionName,
+            configureDbContextOptions: options => options.UseNpgsql(o => o.UseVector()));
 
         builder.Services.AddScoped<IDbContextChecker, DbContextChecker>();
 
