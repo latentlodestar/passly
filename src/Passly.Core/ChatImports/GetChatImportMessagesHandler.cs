@@ -13,14 +13,14 @@ public sealed class GetChatImportMessagesHandler(
 {
     public async Task<ChatImportDetailResponse?> HandleAsync(
         Guid importId,
-        string deviceId,
+        string userId,
         string passphrase,
         int skip,
         int take,
         CancellationToken ct = default)
     {
         var import = await db.ChatImports
-            .Where(c => c.Id == importId && c.DeviceId == deviceId)
+            .Where(c => c.Id == importId && c.UserId == userId)
             .Select(c => new
             {
                 c.Id,

@@ -7,22 +7,31 @@ import type {
   GenerateSubmissionSummaryRequest,
   SubmissionSummaryResponse,
 } from "../types";
+import { getIdToken } from "../auth/cognito";
 
 export const api = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: "" }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: "",
+    prepareHeaders: async (headers) => {
+      const token = await getIdToken();
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
   tagTypes: ["Submissions", "SubmissionSummary"],
   endpoints: (builder) => ({
     getStatus: builder.query<ApiStatusResponse, void>({
       query: () => "/api/status",
     }),
-    getSubmissions: builder.query<SubmissionResponse[], string>({
-      query: (deviceId) => `/api/submissions?deviceId=${encodeURIComponent(deviceId)}`,
+    getSubmissions: builder.query<SubmissionResponse[], void>({
+      query: () => "/api/submissions",
       providesTags: ["Submissions"],
     }),
-    getSubmission: builder.query<SubmissionResponse, { id: string; deviceId: string }>({
-      query: ({ id, deviceId }) =>
-        `/api/submissions/${id}?deviceId=${encodeURIComponent(deviceId)}`,
-      providesTags: (_result, _err, { id }) => [{ type: "Submissions", id }],
+    getSubmission: builder.query<SubmissionResponse, string>({
+      query: (id) => `/api/submissions/${id}`,
+      providesTags: (_result, _err, id) => [{ type: "Submissions", id }],
     }),
     createSubmission: builder.mutation<SubmissionResponse, CreateSubmissionRequest>({
       query: (body) => ({ url: "/api/submissions", method: "POST", body }),
@@ -30,10 +39,10 @@ export const api = createApi({
     }),
     updateSubmissionStep: builder.mutation<
       SubmissionResponse,
-      { id: string; deviceId: string; body: UpdateSubmissionStepRequest }
+      { id: string; body: UpdateSubmissionStepRequest }
     >({
-      query: ({ id, deviceId, body }) => ({
-        url: `/api/submissions/${id}/step?deviceId=${encodeURIComponent(deviceId)}`,
+      query: ({ id, body }) => ({
+        url: `/api/submissions/${id}/step`,
         method: "PATCH",
         body,
       }),
@@ -54,11 +63,10 @@ export const api = createApi({
     }),
     getSubmissionSummary: builder.query<
       SubmissionSummaryResponse,
-      { id: string; deviceId: string }
+      string
     >({
-      query: ({ id, deviceId }) =>
-        `/api/submissions/${id}/summary?deviceId=${encodeURIComponent(deviceId)}`,
-      providesTags: (_result, _err, { id }) => [
+      query: (id) => `/api/submissions/${id}/summary`,
+      providesTags: (_result, _err, id) => [
         { type: "SubmissionSummary", id },
       ],
     }),

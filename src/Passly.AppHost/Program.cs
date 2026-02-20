@@ -1,6 +1,8 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 var postgresPassword = builder.AddParameter("postgres-password", secret: true);
+var cognitoAuthority = builder.AddParameter("cognito-authority");
+var cognitoClientId = builder.AddParameter("cognito-client-id");
 
 var postgres = builder.AddPostgres("postgres", password: postgresPassword)
     .WithImage("pgvector/pgvector")
@@ -16,7 +18,9 @@ var migrations = builder.AddProject<Projects.Passly_MigrationRunner>("migrations
 
 var api = builder.AddProject<Projects.Passly_Api>("api")
     .WithReference(db)
-    .WaitFor(migrations);
+    .WaitFor(migrations)
+    .WithEnvironment("Auth__CognitoAuthority", cognitoAuthority)
+    .WithEnvironment("Auth__CognitoClientId", cognitoClientId);
 
 builder.AddViteApp("web", "../Passly.Web")
     .WithEndpoint("http", e => e.Port = 5019)

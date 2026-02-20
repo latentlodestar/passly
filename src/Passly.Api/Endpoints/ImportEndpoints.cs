@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Passly.Abstractions.Contracts;
+using Passly.Api.Auth;
 using Passly.Core.ChatImports;
 using Rebus.Bus;
 
@@ -14,9 +15,9 @@ public static class ImportEndpoints
     {
         app.MapPost("/api/imports", async (
             IFormFile file,
-            [FromForm] string deviceId,
             [FromForm] string submissionId,
             [FromForm] string passphrase,
+            HttpContext httpContext,
             CreateChatImportHandler handler,
             IBus bus,
             CancellationToken ct) =>
@@ -31,18 +32,17 @@ public static class ImportEndpoints
             if (!AllowedExtensions.Contains(extension))
                 return Results.BadRequest(new { error = "Only .txt and .zip files are accepted." });
 
-            if (string.IsNullOrWhiteSpace(deviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
             if (!Guid.TryParse(submissionId, out var parsedSubmissionId))
                 return Results.BadRequest(new { error = "submissionId is required." });
 
             if (string.IsNullOrWhiteSpace(passphrase) || passphrase.Length < 8)
                 return Results.BadRequest(new { error = "Passphrase must be at least 8 characters." });
 
+            var userId = httpContext.GetUserId();
+
             using var stream = file.OpenReadStream();
             var (response, isDuplicate, error) = await handler.HandleAsync(
-                stream, file.FileName, file.ContentType, deviceId, parsedSubmissionId, passphrase, ct);
+                stream, file.FileName, file.ContentType, userId, parsedSubmissionId, passphrase, ct);
 
             if (error is not null)
                 return Results.NotFound(new { error });
@@ -55,37 +55,34 @@ public static class ImportEndpoints
             return Results.Created($"/api/imports/{response.Id}", response);
         })
         .DisableAntiforgery()
+        .RequireAuthorization()
         .WithName("CreateChatImport")
         .WithTags("Imports");
 
         app.MapGet("/api/imports", async (
-            string deviceId,
             Guid submissionId,
+            HttpContext httpContext,
             GetChatImportsHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
             if (submissionId == Guid.Empty)
                 return Results.BadRequest(new { error = "submissionId is required." });
 
-            return Results.Ok(await handler.HandleAsync(deviceId, submissionId, ct));
+            var userId = httpContext.GetUserId();
+            return Results.Ok(await handler.HandleAsync(userId, submissionId, ct));
         })
+        .RequireAuthorization()
         .WithName("GetChatImports")
         .WithTags("Imports");
 
         app.MapGet("/api/imports/{id:guid}/representative-messages", async (
             Guid id,
-            string deviceId,
             string passphrase,
             int? targetCount,
+            HttpContext httpContext,
             GetRepresentativeMessagesHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
             if (string.IsNullOrWhiteSpace(passphrase) || passphrase.Length < 8)
                 return Results.BadRequest(new { error = "Passphrase must be at least 8 characters." });
 
@@ -93,7 +90,8 @@ public static class ImportEndpoints
             if (count is < 1 or > 1000)
                 return Results.BadRequest(new { error = "targetCount must be between 1 and 1000." });
 
-            var (response, error) = await handler.HandleAsync(id, deviceId, passphrase, count, ct);
+            var userId = httpContext.GetUserId();
+            var (response, error) = await handler.HandleAsync(id, userId, passphrase, count, ct);
 
             return error switch
             {
@@ -103,30 +101,30 @@ public static class ImportEndpoints
                 _ => Results.Ok(response),
             };
         })
+        .RequireAuthorization()
         .WithName("GetRepresentativeMessages")
         .WithTags("Imports");
 
         app.MapGet("/api/imports/{id:guid}/messages", async (
             Guid id,
-            string deviceId,
             string passphrase,
             int skip,
             int take,
+            HttpContext httpContext,
             GetChatImportMessagesHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
             if (string.IsNullOrWhiteSpace(passphrase) || passphrase.Length < 8)
                 return Results.BadRequest(new { error = "Passphrase must be at least 8 characters." });
 
             if (take is < 1 or > 500)
                 return Results.BadRequest(new { error = "take must be between 1 and 500." });
 
-            var response = await handler.HandleAsync(id, deviceId, passphrase, skip, take, ct);
+            var userId = httpContext.GetUserId();
+            var response = await handler.HandleAsync(id, userId, passphrase, skip, take, ct);
             return response is not null ? Results.Ok(response) : Results.NotFound();
         })
+        .RequireAuthorization()
         .WithName("GetChatImportMessages")
         .WithTags("Imports");
 

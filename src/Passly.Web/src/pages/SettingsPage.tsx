@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
-import { useDeviceId } from "../hooks/useDeviceId";
 import { useGetSubmissionsQuery } from "../api/api";
 import { useAppDispatch, useAppSelector } from "../store";
 import { setActiveSubmission } from "../store/activeSubmissionSlice";
@@ -8,10 +7,9 @@ import { stepToRoute } from "../lib/steps";
 
 export function SettingsPage() {
   const navigate = useNavigate();
-  const deviceId = useDeviceId();
   const dispatch = useAppDispatch();
   const activeId = useAppSelector((s) => s.activeSubmission.id);
-  const { data: submissions = [] } = useGetSubmissionsQuery(deviceId);
+  const { data: submissions = [] } = useGetSubmissionsQuery();
 
   return (
     <div className="page">

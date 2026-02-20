@@ -35,9 +35,9 @@ public sealed class AnalyzeSubmissionHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsync_SubmissionNotFound_ReturnsError()
     {
-        var request = new AnalyzeSubmissionRequest("device-1", "pass", Guid.NewGuid());
+        var request = new AnalyzeSubmissionRequest("pass", Guid.NewGuid());
 
-        var (response, error) = await _sut.HandleAsync(Guid.NewGuid(), request);
+        var (response, error) = await _sut.HandleAsync(Guid.NewGuid(), "user-1", request);
 
         error.Should().Be(AnalyzeSubmissionError.SubmissionNotFound);
         response.Should().BeNull();
@@ -50,7 +50,7 @@ public sealed class AnalyzeSubmissionHandlerTests : IDisposable
         var submission = new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "Test",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -74,9 +74,9 @@ public sealed class AnalyzeSubmissionHandlerTests : IDisposable
         _db.Submissions.Add(submission);
         await _db.SaveChangesAsync();
 
-        var request = new AnalyzeSubmissionRequest("device-1", "pass", Guid.NewGuid());
+        var request = new AnalyzeSubmissionRequest("pass", Guid.NewGuid());
 
-        var (response, error) = await _sut.HandleAsync(submissionId, request);
+        var (response, error) = await _sut.HandleAsync(submissionId, "user-1", request);
 
         error.Should().Be(AnalyzeSubmissionError.AnalysisAlreadyExists);
         response.Should().BeNull();
@@ -89,7 +89,7 @@ public sealed class AnalyzeSubmissionHandlerTests : IDisposable
         _db.Submissions.Add(new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "Test",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -98,9 +98,9 @@ public sealed class AnalyzeSubmissionHandlerTests : IDisposable
         });
         await _db.SaveChangesAsync();
 
-        var request = new AnalyzeSubmissionRequest("device-1", "pass", Guid.NewGuid());
+        var request = new AnalyzeSubmissionRequest("pass", Guid.NewGuid());
 
-        var (response, error) = await _sut.HandleAsync(submissionId, request);
+        var (response, error) = await _sut.HandleAsync(submissionId, "user-1", request);
 
         error.Should().Be(AnalyzeSubmissionError.ImportNotFound);
         response.Should().BeNull();
@@ -115,7 +115,7 @@ public sealed class AnalyzeSubmissionHandlerTests : IDisposable
         _db.Submissions.Add(new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "Test",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -126,7 +126,7 @@ public sealed class AnalyzeSubmissionHandlerTests : IDisposable
         _db.ChatImports.Add(new ChatImport
         {
             Id = importId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             SubmissionId = submissionId,
             FileName = "chat.txt",
             FileHash = "abc",
@@ -141,9 +141,9 @@ public sealed class AnalyzeSubmissionHandlerTests : IDisposable
         });
         await _db.SaveChangesAsync();
 
-        var request = new AnalyzeSubmissionRequest("device-1", "pass", importId);
+        var request = new AnalyzeSubmissionRequest("pass", importId);
 
-        var (response, error) = await _sut.HandleAsync(submissionId, request);
+        var (response, error) = await _sut.HandleAsync(submissionId, "user-1", request);
 
         error.Should().Be(AnalyzeSubmissionError.ImportNotParsed);
         response.Should().BeNull();
@@ -158,7 +158,7 @@ public sealed class AnalyzeSubmissionHandlerTests : IDisposable
         _db.Submissions.Add(new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "My Submission",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -169,7 +169,7 @@ public sealed class AnalyzeSubmissionHandlerTests : IDisposable
         _db.ChatImports.Add(new ChatImport
         {
             Id = importId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             SubmissionId = submissionId,
             FileName = "chat.txt",
             FileHash = "abc",
@@ -195,9 +195,9 @@ public sealed class AnalyzeSubmissionHandlerTests : IDisposable
         _encryption.Encrypt(Arg.Any<byte[]>(), Arg.Any<string>())
             .Returns(new EncryptionResult([1, 2], [3], [4], [5]));
 
-        var request = new AnalyzeSubmissionRequest("device-1", "pass", importId);
+        var request = new AnalyzeSubmissionRequest("pass", importId);
 
-        var (response, error) = await _sut.HandleAsync(submissionId, request);
+        var (response, error) = await _sut.HandleAsync(submissionId, "user-1", request);
 
         error.Should().BeNull();
         response.Should().NotBeNull();

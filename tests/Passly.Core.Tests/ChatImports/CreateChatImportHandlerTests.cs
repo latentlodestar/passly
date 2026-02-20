@@ -27,7 +27,7 @@ public sealed class CreateChatImportHandlerTests : IDisposable
         _db.Submissions.Add(new Submission
         {
             Id = _submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "Test",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -56,7 +56,7 @@ public sealed class CreateChatImportHandlerTests : IDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes("chat content"));
 
         var (response, isDuplicate, error) = await _sut.HandleAsync(
-            stream, "chat.txt", "text/plain", "device-1", _submissionId, "passphrase123");
+            stream, "chat.txt", "text/plain", "user-1", _submissionId, "passphrase123");
 
         isDuplicate.Should().BeFalse();
         error.Should().BeNull();
@@ -65,7 +65,7 @@ public sealed class CreateChatImportHandlerTests : IDisposable
         response.Status.Should().Be("Pending");
 
         var saved = await _db.ChatImports.SingleAsync();
-        saved.DeviceId.Should().Be("device-1");
+        saved.UserId.Should().Be("user-1");
         saved.FileName.Should().Be("chat.txt");
         saved.SubmissionId.Should().Be(_submissionId);
     }
@@ -76,11 +76,11 @@ public sealed class CreateChatImportHandlerTests : IDisposable
         var content = Encoding.UTF8.GetBytes("same content");
 
         using var stream1 = new MemoryStream(content);
-        await _sut.HandleAsync(stream1, "chat.txt", "text/plain", "device-1", _submissionId, "passphrase123");
+        await _sut.HandleAsync(stream1, "chat.txt", "text/plain", "user-1", _submissionId, "passphrase123");
 
         using var stream2 = new MemoryStream(content);
         var (response, isDuplicate, _) = await _sut.HandleAsync(
-            stream2, "chat-copy.txt", "text/plain", "device-1", _submissionId, "passphrase123");
+            stream2, "chat-copy.txt", "text/plain", "user-1", _submissionId, "passphrase123");
 
         isDuplicate.Should().BeTrue();
         response.Should().BeNull();
@@ -94,7 +94,7 @@ public sealed class CreateChatImportHandlerTests : IDisposable
         _db.Submissions.Add(new Submission
         {
             Id = submission2Id,
-            DeviceId = "device-2",
+            UserId = "user-2",
             Label = "Test 2",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -106,11 +106,11 @@ public sealed class CreateChatImportHandlerTests : IDisposable
         var content = Encoding.UTF8.GetBytes("shared content");
 
         using var stream1 = new MemoryStream(content);
-        await _sut.HandleAsync(stream1, "chat.txt", "text/plain", "device-1", _submissionId, "passphrase123");
+        await _sut.HandleAsync(stream1, "chat.txt", "text/plain", "user-1", _submissionId, "passphrase123");
 
         using var stream2 = new MemoryStream(content);
         var (response, isDuplicate, _) = await _sut.HandleAsync(
-            stream2, "chat.txt", "text/plain", "device-2", submission2Id, "passphrase456");
+            stream2, "chat.txt", "text/plain", "user-2", submission2Id, "passphrase456");
 
         isDuplicate.Should().BeFalse();
         response.Should().NotBeNull();
@@ -122,7 +122,7 @@ public sealed class CreateChatImportHandlerTests : IDisposable
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes("chat content"));
 
         var (response, isDuplicate, error) = await _sut.HandleAsync(
-            stream, "chat.txt", "text/plain", "device-1", Guid.NewGuid(), "passphrase123");
+            stream, "chat.txt", "text/plain", "user-1", Guid.NewGuid(), "passphrase123");
 
         response.Should().BeNull();
         isDuplicate.Should().BeFalse();

@@ -33,9 +33,9 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsync_SubmissionNotFound_ReturnsError()
     {
-        var request = new GenerateSubmissionSummaryRequest("device-1", "pass", Convert.ToBase64String([0xFF, 0xD8]));
+        var request = new GenerateSubmissionSummaryRequest("pass", Convert.ToBase64String([0xFF, 0xD8]));
 
-        var (response, error) = await _sut.HandleAsync(Guid.NewGuid(), request);
+        var (response, error) = await _sut.HandleAsync(Guid.NewGuid(), "user-1", request);
 
         error.Should().Be(GenerateSubmissionSummaryError.SubmissionNotFound);
         response.Should().BeNull();
@@ -48,7 +48,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         _db.Submissions.Add(new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "Test",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -57,9 +57,9 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         });
         await _db.SaveChangesAsync();
 
-        var request = new GenerateSubmissionSummaryRequest("device-1", "pass", Convert.ToBase64String([0xFF, 0xD8]));
+        var request = new GenerateSubmissionSummaryRequest("pass", Convert.ToBase64String([0xFF, 0xD8]));
 
-        var (response, error) = await _sut.HandleAsync(submissionId, request);
+        var (response, error) = await _sut.HandleAsync(submissionId, "user-1", request);
 
         error.Should().Be(GenerateSubmissionSummaryError.AnalysisNotFound);
         response.Should().BeNull();
@@ -72,7 +72,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         var submission = new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "Test",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -100,9 +100,9 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         _db.Submissions.Add(submission);
         await _db.SaveChangesAsync();
 
-        var request = new GenerateSubmissionSummaryRequest("device-1", "pass", Convert.ToBase64String([0xFF, 0xD8]));
+        var request = new GenerateSubmissionSummaryRequest("pass", Convert.ToBase64String([0xFF, 0xD8]));
 
-        var (response, error) = await _sut.HandleAsync(submissionId, request);
+        var (response, error) = await _sut.HandleAsync(submissionId, "user-1", request);
 
         error.Should().Be(GenerateSubmissionSummaryError.PdfAlreadyExists);
         response.Should().BeNull();
@@ -128,7 +128,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         var submission = new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "My Submission",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -162,9 +162,9 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         _encryption.Encrypt(Arg.Any<byte[]>(), Arg.Any<string>())
             .Returns(new EncryptionResult([1, 2], [3], [4], [5]));
 
-        var request = new GenerateSubmissionSummaryRequest("device-1", "pass", Convert.ToBase64String([0xFF, 0xD8]));
+        var request = new GenerateSubmissionSummaryRequest("pass", Convert.ToBase64String([0xFF, 0xD8]));
 
-        var (response, error) = await _sut.HandleAsync(submissionId, request);
+        var (response, error) = await _sut.HandleAsync(submissionId, "user-1", request);
 
         error.Should().BeNull();
         response.Should().NotBeNull();
@@ -185,7 +185,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         var submission = new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "Test",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -209,9 +209,9 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         _db.Submissions.Add(submission);
         await _db.SaveChangesAsync();
 
-        var request = new GenerateSubmissionSummaryRequest("device-1", "pass", null);
+        var request = new GenerateSubmissionSummaryRequest("pass", null);
 
-        var (response, error) = await _sut.HandleAsync(submissionId, request);
+        var (response, error) = await _sut.HandleAsync(submissionId, "user-1", request);
 
         error.Should().Be(GenerateSubmissionSummaryError.SignatureRequired);
         response.Should().BeNull();
@@ -224,7 +224,7 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         var submission = new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "Test",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -248,9 +248,9 @@ public sealed class GenerateSubmissionSummaryHandlerTests : IDisposable
         _db.Submissions.Add(submission);
         await _db.SaveChangesAsync();
 
-        var request = new GenerateSubmissionSummaryRequest("device-1", "pass", "not-valid-base64!!!");
+        var request = new GenerateSubmissionSummaryRequest("pass", "not-valid-base64!!!");
 
-        var (response, error) = await _sut.HandleAsync(submissionId, request);
+        var (response, error) = await _sut.HandleAsync(submissionId, "user-1", request);
 
         error.Should().Be(GenerateSubmissionSummaryError.InvalidSignature);
         response.Should().BeNull();

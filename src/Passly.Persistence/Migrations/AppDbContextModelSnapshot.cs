@@ -38,10 +38,6 @@ namespace Passly.Persistence.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("DeviceId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<byte[]>("EncryptedRawContent")
                         .IsRequired()
                         .HasColumnType("bytea");
@@ -76,13 +72,17 @@ namespace Passly.Persistence.Migrations
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.HasKey("Id");
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.HasIndex("DeviceId");
+                    b.HasKey("Id");
 
                     b.HasIndex("SubmissionId");
 
-                    b.HasIndex("DeviceId", "FileHash")
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "FileHash")
                         .IsUnique();
 
                     b.ToTable("chat_imports", "app");
@@ -177,10 +177,6 @@ namespace Passly.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("DeviceId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("Label")
                         .IsRequired()
                         .HasColumnType("text");
@@ -192,9 +188,13 @@ namespace Passly.Persistence.Migrations
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("DeviceId");
+                    b.HasIndex("UserId");
 
                     b.ToTable("submissions", "app");
                 });

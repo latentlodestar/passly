@@ -10,7 +10,6 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { reportStep } from '@/store/progress-slice';
 import { useStepSync } from '@/hooks/use-step-sync';
-import { useDeviceId } from '@/hooks/use-device-id';
 import { usePassphrase } from '@/hooks/use-passphrase';
 import {
   useGetChatImportsQuery,
@@ -43,13 +42,12 @@ export default function ChecklistScreen() {
   useEffect(() => { dispatch(reportStep(1)); }, [dispatch]);
   useStepSync('ReviewComplete');
 
-  const deviceId = useDeviceId();
   const { passphrase, isLoaded: passphraseLoaded } = usePassphrase();
 
   // Fetch parsed chat imports to find one to use for analysis
   const { data: imports = [] } = useGetChatImportsQuery(
-    { deviceId: deviceId ?? '', submissionId: activeSubmissionId ?? '' },
-    { skip: !deviceId || !activeSubmissionId },
+    { submissionId: activeSubmissionId ?? '' },
+    { skip: !activeSubmissionId },
   );
   const parsedImport = imports.find(
     (i: ChatImportSummaryResponse) => i.status === 'Parsed',
@@ -61,8 +59,8 @@ export default function ChecklistScreen() {
     isLoading: isLoadingMeta,
     refetch: refetchMeta,
   } = useGetSubmissionSummaryQuery(
-    { id: activeSubmissionId ?? '', deviceId: deviceId ?? '' },
-    { skip: !activeSubmissionId || !deviceId },
+    { id: activeSubmissionId ?? '' },
+    { skip: !activeSubmissionId },
   );
 
   const hasSummary = !!summaryMeta;
@@ -74,10 +72,9 @@ export default function ChecklistScreen() {
   } = useGetSubmissionSummaryContentQuery(
     {
       id: activeSubmissionId ?? '',
-      deviceId: deviceId ?? '',
       passphrase: passphrase ?? '',
     },
-    { skip: !hasSummary || !activeSubmissionId || !deviceId || !passphrase },
+    { skip: !hasSummary || !activeSubmissionId || !passphrase },
   );
 
   const [analyzeSubmission] = useAnalyzeSubmissionMutation();
@@ -92,7 +89,7 @@ export default function ChecklistScreen() {
   useEffect(() => {
     if (hasTriggered) return;
     if (isLoadingMeta || hasSummary) return;
-    if (!activeSubmissionId || !deviceId || !passphrase || !parsedImport) return;
+    if (!activeSubmissionId || !passphrase || !parsedImport) return;
 
     setHasTriggered(true);
     setIsAnalyzing(true);
@@ -101,7 +98,6 @@ export default function ChecklistScreen() {
     analyzeSubmission({
       id: activeSubmissionId,
       body: {
-        deviceId,
         passphrase,
         chatImportId: parsedImport.id,
       },
@@ -119,7 +115,7 @@ export default function ChecklistScreen() {
         setAnalyzeError(message);
       })
       .finally(() => setIsAnalyzing(false));
-  }, [hasTriggered, isLoadingMeta, hasSummary, activeSubmissionId, deviceId, passphrase, parsedImport, analyzeSubmission, refetchMeta]);
+  }, [hasTriggered, isLoadingMeta, hasSummary, activeSubmissionId, passphrase, parsedImport, analyzeSubmission, refetchMeta]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top', 'left', 'right']}>

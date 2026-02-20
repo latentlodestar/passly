@@ -7,11 +7,11 @@ public sealed class DeleteSubmissionHandler(AppDbContext db)
 {
     public async Task<bool> HandleAsync(
         Guid id,
-        string deviceId,
+        string userId,
         CancellationToken ct = default)
     {
         var submission = await db.Submissions
-            .FirstOrDefaultAsync(s => s.Id == id && s.DeviceId == deviceId, ct);
+            .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId, ct);
 
         if (submission is null)
             return false;

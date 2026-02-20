@@ -9,7 +9,7 @@ public sealed class UpdateSubmissionStepHandler(AppDbContext db, IClock clock)
 {
     public async Task<SubmissionResponse?> HandleAsync(
         Guid id,
-        string deviceId,
+        string userId,
         UpdateSubmissionStepRequest request,
         CancellationToken ct = default)
     {
@@ -17,7 +17,7 @@ public sealed class UpdateSubmissionStepHandler(AppDbContext db, IClock clock)
             return null;
 
         var entity = await db.Submissions
-            .FirstOrDefaultAsync(s => s.Id == id && s.DeviceId == deviceId, ct);
+            .FirstOrDefaultAsync(s => s.Id == id && s.UserId == userId, ct);
 
         if (entity is null)
             return null;

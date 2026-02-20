@@ -29,7 +29,7 @@ public sealed class GetSubmissionSummaryHandlerTests : IDisposable
     [Fact]
     public async Task HandleAsync_SubmissionNotFound_ReturnsError()
     {
-        var (pdf, meta, error) = await _sut.HandleAsync(Guid.NewGuid(), "device-1", "pass");
+        var (pdf, meta, error) = await _sut.HandleAsync(Guid.NewGuid(), "user-1", "pass");
 
         error.Should().Be(GetSubmissionSummaryError.SubmissionNotFound);
         pdf.Should().BeNull();
@@ -43,7 +43,7 @@ public sealed class GetSubmissionSummaryHandlerTests : IDisposable
         _db.Submissions.Add(new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "Test",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -52,7 +52,7 @@ public sealed class GetSubmissionSummaryHandlerTests : IDisposable
         });
         await _db.SaveChangesAsync();
 
-        var (pdf, meta, error) = await _sut.HandleAsync(submissionId, "device-1", "pass");
+        var (pdf, meta, error) = await _sut.HandleAsync(submissionId, "user-1", "pass");
 
         error.Should().Be(GetSubmissionSummaryError.SummaryNotFound);
         pdf.Should().BeNull();
@@ -66,7 +66,7 @@ public sealed class GetSubmissionSummaryHandlerTests : IDisposable
         _db.Submissions.Add(new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "Test",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -96,7 +96,7 @@ public sealed class GetSubmissionSummaryHandlerTests : IDisposable
         _encryption.Decrypt(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<byte[]>(), Arg.Any<byte[]>())
             .Throws(new AuthenticationTagMismatchException());
 
-        var (pdf, meta, error) = await _sut.HandleAsync(submissionId, "device-1", "wrong");
+        var (pdf, meta, error) = await _sut.HandleAsync(submissionId, "user-1", "wrong");
 
         error.Should().Be(GetSubmissionSummaryError.WrongPassphrase);
         pdf.Should().BeNull();
@@ -112,7 +112,7 @@ public sealed class GetSubmissionSummaryHandlerTests : IDisposable
         _db.Submissions.Add(new Submission
         {
             Id = submissionId,
-            DeviceId = "device-1",
+            UserId = "user-1",
             Label = "Test",
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,
@@ -142,7 +142,7 @@ public sealed class GetSubmissionSummaryHandlerTests : IDisposable
         _encryption.Decrypt(Arg.Any<byte[]>(), Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<byte[]>(), Arg.Any<byte[]>())
             .Returns(expectedPdf);
 
-        var (pdf, meta, error) = await _sut.HandleAsync(submissionId, "device-1", "pass");
+        var (pdf, meta, error) = await _sut.HandleAsync(submissionId, "user-1", "pass");
 
         error.Should().BeNull();
         pdf.Should().BeEquivalentTo(expectedPdf);

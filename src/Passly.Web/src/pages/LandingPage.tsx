@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/Button";
-import { useDeviceId } from "../hooks/useDeviceId";
 import {
   useCreateSubmissionMutation,
   useGetSubmissionQuery,
@@ -11,7 +10,6 @@ import { stepToRoute } from "../lib/steps";
 
 export function LandingPage() {
   const navigate = useNavigate();
-  const deviceId = useDeviceId();
   const dispatch = useAppDispatch();
   const activeId = useAppSelector((s) => s.activeSubmission.id);
 
@@ -19,13 +17,12 @@ export function LandingPage() {
     useCreateSubmissionMutation();
 
   const { data: activeSubmission } = useGetSubmissionQuery(
-    { id: activeId!, deviceId },
+    activeId!,
     { skip: !activeId },
   );
 
   const handleCreate = async () => {
     const result = await createSubmission({
-      deviceId,
       label: `Petition ${new Date().toLocaleDateString()}`,
     }).unwrap();
     dispatch(setActiveSubmission(result.id));

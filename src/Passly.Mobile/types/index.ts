@@ -31,7 +31,6 @@ export interface SubmissionResponse {
 }
 
 export interface CreateSubmissionRequest {
-  deviceId: string;
   label: string;
 }
 
@@ -59,13 +58,11 @@ export interface ChatImportDetailResponse {
 }
 
 export interface AnalyzeSubmissionRequest {
-  deviceId: string;
   passphrase: string;
   chatImportId: string;
 }
 
 export interface GenerateSubmissionSummaryRequest {
-  deviceId: string;
   passphrase: string;
   signatureBase64: string;
 }

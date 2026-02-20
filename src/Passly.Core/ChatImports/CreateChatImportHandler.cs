@@ -16,13 +16,13 @@ public sealed class CreateChatImportHandler(
         Stream fileStream,
         string fileName,
         string contentType,
-        string deviceId,
+        string userId,
         Guid submissionId,
         string passphrase,
         CancellationToken ct = default)
     {
         var submissionExists = await db.Submissions
-            .AnyAsync(s => s.Id == submissionId && s.DeviceId == deviceId, ct);
+            .AnyAsync(s => s.Id == submissionId && s.UserId == userId, ct);
 
         if (!submissionExists)
             return (null, false, "Submission not found.");
@@ -34,7 +34,7 @@ public sealed class CreateChatImportHandler(
         var fileHash = Convert.ToHexString(SHA256.HashData(rawContent)).ToLowerInvariant();
 
         var exists = await db.ChatImports
-            .AnyAsync(c => c.DeviceId == deviceId && c.FileHash == fileHash, ct);
+            .AnyAsync(c => c.UserId == userId && c.FileHash == fileHash, ct);
 
         if (exists)
             return (null, true, null);
@@ -45,7 +45,7 @@ public sealed class CreateChatImportHandler(
         var entity = new ChatImport
         {
             Id = Guid.NewGuid(),
-            DeviceId = deviceId,
+            UserId = userId,
             SubmissionId = submissionId,
             FileName = fileName,
             FileHash = fileHash,

@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { getIdToken } from "@/auth/cognito";
 import type {
   ApiStatusResponse,
   CreateChatImportResponse,
@@ -16,7 +17,16 @@ import type {
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:5192";
 
 export const api = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: API_BASE_URL }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: API_BASE_URL,
+    prepareHeaders: async (headers) => {
+      const token = await getIdToken();
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
   tagTypes: ["Imports", "Submissions", "SubmissionSummary"],
   endpoints: (builder) => ({
     getStatus: builder.query<ApiStatusResponse, void>({
@@ -30,45 +40,44 @@ export const api = createApi({
       }),
       invalidatesTags: ["Imports"],
     }),
-    getChatImports: builder.query<ChatImportSummaryResponse[], { deviceId: string; submissionId: string }>({
-      query: ({ deviceId, submissionId }) =>
-        `/api/imports?deviceId=${encodeURIComponent(deviceId)}&submissionId=${encodeURIComponent(submissionId)}`,
+    getChatImports: builder.query<ChatImportSummaryResponse[], { submissionId: string }>({
+      query: ({ submissionId }) =>
+        `/api/imports?submissionId=${encodeURIComponent(submissionId)}`,
       providesTags: ["Imports"],
     }),
     getChatImportMessages: builder.query<
       ChatImportDetailResponse,
-      { id: string; deviceId: string; passphrase: string; skip: number; take: number }
+      { id: string; passphrase: string; skip: number; take: number }
     >({
-      query: ({ id, deviceId, passphrase, skip, take }) =>
-        `/api/imports/${id}/messages?deviceId=${encodeURIComponent(deviceId)}&passphrase=${encodeURIComponent(passphrase)}&skip=${skip}&take=${take}`,
+      query: ({ id, passphrase, skip, take }) =>
+        `/api/imports/${id}/messages?passphrase=${encodeURIComponent(passphrase)}&skip=${skip}&take=${take}`,
       providesTags: (_result, _err, { id }) => [{ type: "Imports", id }],
     }),
-    getSubmissions: builder.query<SubmissionResponse[], string>({
-      query: (deviceId) => `/api/submissions?deviceId=${encodeURIComponent(deviceId)}`,
+    getSubmissions: builder.query<SubmissionResponse[], void>({
+      query: () => `/api/submissions`,
       providesTags: ["Submissions"],
     }),
-    getSubmission: builder.query<SubmissionResponse, { id: string; deviceId: string }>({
-      query: ({ id, deviceId }) =>
-        `/api/submissions/${id}?deviceId=${encodeURIComponent(deviceId)}`,
+    getSubmission: builder.query<SubmissionResponse, { id: string }>({
+      query: ({ id }) => `/api/submissions/${id}`,
       providesTags: (_result, _err, { id }) => [{ type: "Submissions", id }],
     }),
     createSubmission: builder.mutation<SubmissionResponse, CreateSubmissionRequest>({
       query: (body) => ({ url: "/api/submissions", method: "POST", body }),
       invalidatesTags: ["Submissions"],
     }),
-    deleteSubmission: builder.mutation<void, { id: string; deviceId: string }>({
-      query: ({ id, deviceId }) => ({
-        url: `/api/submissions/${id}?deviceId=${encodeURIComponent(deviceId)}`,
+    deleteSubmission: builder.mutation<void, { id: string }>({
+      query: ({ id }) => ({
+        url: `/api/submissions/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Submissions"],
     }),
     updateSubmissionStep: builder.mutation<
       SubmissionResponse,
-      { id: string; deviceId: string; body: UpdateSubmissionStepRequest }
+      { id: string; body: UpdateSubmissionStepRequest }
     >({
-      query: ({ id, deviceId, body }) => ({
-        url: `/api/submissions/${id}/step?deviceId=${encodeURIComponent(deviceId)}`,
+      query: ({ id, body }) => ({
+        url: `/api/submissions/${id}/step`,
         method: "PATCH",
         body,
       }),
@@ -102,20 +111,19 @@ export const api = createApi({
     }),
     getSubmissionSummary: builder.query<
       SubmissionSummaryResponse,
-      { id: string; deviceId: string }
+      { id: string }
     >({
-      query: ({ id, deviceId }) =>
-        `/api/submissions/${id}/summary?deviceId=${encodeURIComponent(deviceId)}`,
+      query: ({ id }) => `/api/submissions/${id}/summary`,
       providesTags: (_result, _err, { id }) => [
         { type: "SubmissionSummary", id },
       ],
     }),
     getSubmissionSummaryContent: builder.query<
       SummaryContentResponse,
-      { id: string; deviceId: string; passphrase: string }
+      { id: string; passphrase: string }
     >({
-      query: ({ id, deviceId, passphrase }) =>
-        `/api/submissions/${id}/summary/content?deviceId=${encodeURIComponent(deviceId)}&passphrase=${encodeURIComponent(passphrase)}`,
+      query: ({ id, passphrase }) =>
+        `/api/submissions/${id}/summary/content?passphrase=${encodeURIComponent(passphrase)}`,
       providesTags: (_result, _err, { id }) => [
         { type: "SubmissionSummary", id },
       ],

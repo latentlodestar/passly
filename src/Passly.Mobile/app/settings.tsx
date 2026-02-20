@@ -6,9 +6,9 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useDeviceId } from '@/hooks/use-device-id';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setAppearance, type Appearance } from '@/store/theme-slice';
+import { signOut } from '@/store/auth-slice';
 import { usePassphrase } from '@/hooks/use-passphrase';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import { TextField } from '@/components/ui/TextField';
@@ -26,7 +26,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const appearance = useAppSelector((state) => state.theme.appearance);
-  const deviceId = useDeviceId();
+  const userEmail = useAppSelector((state) => state.auth.userEmail);
   const { passphrase: savedPassphrase, isLoaded, setPassphrase } = usePassphrase();
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | undefined>();
@@ -39,6 +39,11 @@ export default function SettingsScreen() {
     setError(undefined);
     await setPassphrase(draft);
     setDraft('');
+  };
+
+  const handleSignOut = () => {
+    dispatch(signOut());
+    router.replace('/signin');
   };
 
   return (
@@ -55,6 +60,21 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.content}>
+        {userEmail && (
+          <Card>
+            <CardHeader>Account</CardHeader>
+            <CardBody>
+              <Text style={[styles.emailText, { color: t.fg2 }]}>{userEmail}</Text>
+              <Button
+                label="Sign out"
+                variant="secondary"
+                size="sm"
+                onPress={handleSignOut}
+              />
+            </CardBody>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>Appearance</CardHeader>
           <CardBody>
@@ -155,6 +175,10 @@ const styles = StyleSheet.create({
   content: {
     padding: spacing.xl,
     gap: spacing.lg,
+  },
+  emailText: {
+    fontSize: fontSize.sm,
+    lineHeight: 20,
   },
   option: {
     flexDirection: 'row',

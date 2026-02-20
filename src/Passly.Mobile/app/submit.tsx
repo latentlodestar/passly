@@ -10,12 +10,12 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { reportStep } from '@/store/progress-slice';
 import { useStepSync } from '@/hooks/use-step-sync';
-import { useDeviceId } from '@/hooks/use-device-id';
 import { usePassphrase } from '@/hooks/use-passphrase';
 import {
   useGetSubmissionSummaryQuery,
   useGenerateSubmissionSummaryMutation,
 } from '@/api/api';
+import { getIdToken } from '@/auth/cognito';
 import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
 import { Alert } from '@/components/ui/Alert';
@@ -42,7 +42,6 @@ export default function SummaryScreen() {
   useEffect(() => { dispatch(reportStep(2)); }, [dispatch]);
   useStepSync('ReviewComplete');
 
-  const deviceId = useDeviceId();
   const { passphrase, isLoaded: passphraseLoaded } = usePassphrase();
 
   // Fetch existing summary metadata
@@ -51,8 +50,8 @@ export default function SummaryScreen() {
     isLoading: isLoadingMeta,
     refetch: refetchMeta,
   } = useGetSubmissionSummaryQuery(
-    { id: activeSubmissionId ?? '', deviceId: deviceId ?? '' },
-    { skip: !activeSubmissionId || !deviceId },
+    { id: activeSubmissionId ?? '' },
+    { skip: !activeSubmissionId },
   );
 
   const hasSummary = !!summaryMeta;
@@ -70,7 +69,7 @@ export default function SummaryScreen() {
   /* ---- Generate PDF ---- */
 
   const handleGeneratePdf = useCallback(async () => {
-    if (!activeSubmissionId || !deviceId || !passphrase || !signatureBase64) return;
+    if (!activeSubmissionId || !passphrase || !signatureBase64) return;
 
     setIsGenerating(true);
     setGenerateError(null);
@@ -78,7 +77,7 @@ export default function SummaryScreen() {
     try {
       await generateSummary({
         id: activeSubmissionId,
-        body: { deviceId, passphrase, signatureBase64 },
+        body: { passphrase, signatureBase64 },
       }).unwrap();
       refetchMeta();
     } catch (err: unknown) {
@@ -93,20 +92,21 @@ export default function SummaryScreen() {
     } finally {
       setIsGenerating(false);
     }
-  }, [activeSubmissionId, deviceId, passphrase, signatureBase64, generateSummary, refetchMeta]);
+  }, [activeSubmissionId, passphrase, signatureBase64, generateSummary, refetchMeta]);
 
   /* ---- Download ---- */
 
   const handleDownload = useCallback(async () => {
-    if (!activeSubmissionId || !deviceId || !passphrase) return;
+    if (!activeSubmissionId || !passphrase) return;
 
+    const token = await getIdToken();
     const url =
       `${API_BASE_URL}/api/submissions/${activeSubmissionId}/summary/download` +
-      `?deviceId=${encodeURIComponent(deviceId)}` +
-      `&passphrase=${encodeURIComponent(passphrase)}`;
+      `?passphrase=${encodeURIComponent(passphrase)}` +
+      (token ? `&token=${encodeURIComponent(token)}` : '');
 
     await WebBrowser.openBrowserAsync(url);
-  }, [activeSubmissionId, deviceId, passphrase]);
+  }, [activeSubmissionId, passphrase]);
 
   /* ---- Render ---- */
 

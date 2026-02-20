@@ -8,11 +8,11 @@ public sealed class GetSubmissionSummaryMetadataHandler(AppDbContext db)
 {
     public async Task<SubmissionSummaryResponse?> HandleAsync(
         Guid submissionId,
-        string deviceId,
+        string userId,
         CancellationToken ct = default)
     {
         return await db.Submissions
-            .Where(s => s.Id == submissionId && s.DeviceId == deviceId)
+            .Where(s => s.Id == submissionId && s.UserId == userId)
             .Select(s => s.Summary)
             .Where(ss => ss != null)
             .Select(ss => new SubmissionSummaryResponse(

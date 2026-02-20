@@ -1,4 +1,6 @@
 using Amazon.SQS;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Passly.Abstractions.Contracts;
 using Passly.Api.Endpoints;
 using Passly.Core;
@@ -39,6 +41,21 @@ builder.Services.AddRebus(cfg =>
 
 builder.Services.AutoRegisterHandlersFromAssemblyOf<ChatImportCreatedHandler>();
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = builder.Configuration["Auth:CognitoAuthority"];
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Auth:CognitoClientId"],
+            ValidateLifetime = true,
+        };
+    });
+builder.Services.AddAuthorization();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -52,6 +69,8 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapDefaultEndpoints();
 app.MapStatusEndpoints();
 app.MapLogEndpoints();

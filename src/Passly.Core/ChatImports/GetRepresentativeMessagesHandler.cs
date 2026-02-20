@@ -14,13 +14,13 @@ public sealed class GetRepresentativeMessagesHandler(
 {
     public async Task<(RepresentativeMessagesResponse? Response, GetRepresentativeMessagesError? Error)> HandleAsync(
         Guid chatImportId,
-        string deviceId,
+        string userId,
         string passphrase,
         int targetCount,
         CancellationToken ct = default)
     {
         var import = await db.ChatImports
-            .Where(c => c.Id == chatImportId && c.DeviceId == deviceId)
+            .Where(c => c.Id == chatImportId && c.UserId == userId)
             .Select(c => new { c.Id, c.Status })
             .FirstOrDefaultAsync(ct);
 

@@ -14,7 +14,6 @@ export interface SubmissionResponse {
 }
 
 export interface CreateSubmissionRequest {
-  deviceId: string;
   label: string;
 }
 
@@ -23,7 +22,6 @@ export interface UpdateSubmissionStepRequest {
 }
 
 export interface GenerateSubmissionSummaryRequest {
-  deviceId: string;
   passphrase: string;
   chatImportId: string;
 }

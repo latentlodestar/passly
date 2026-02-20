@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Passly.Abstractions.Contracts;
 using Passly.Abstractions.Interfaces;
+using Passly.Api.Tests.Auth;
 using Passly.Persistence;
 using NSubstitute;
 
@@ -30,6 +32,10 @@ public sealed class StatusEndpointTests : IClassFixture<WebApplicationFactory<Pr
                 checker.CanConnectAsync(Arg.Any<CancellationToken>()).Returns(true);
                 services.RemoveAll<IDbContextChecker>();
                 services.AddScoped(_ => checker);
+
+                services.AddAuthentication(TestAuthHandler.SchemeName)
+                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+                        TestAuthHandler.SchemeName, _ => { });
             });
         }).CreateClient();
     }

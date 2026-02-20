@@ -62,3 +62,18 @@ output "public_subnet_ids" {
   description = "Public subnet IDs (for GitHub Actions vars)"
   value       = aws_subnet.public[*].id
 }
+
+output "cognito_user_pool_id" {
+  description = "Cognito User Pool ID"
+  value       = aws_cognito_user_pool.main.id
+}
+
+output "cognito_client_id" {
+  description = "Cognito User Pool Client ID"
+  value       = aws_cognito_user_pool_client.main.id
+}
+
+output "cognito_issuer_url" {
+  description = "Cognito issuer URL for JWT validation"
+  value       = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.main.id}"
+}

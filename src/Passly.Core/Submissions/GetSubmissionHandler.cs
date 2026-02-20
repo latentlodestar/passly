@@ -8,11 +8,11 @@ public sealed class GetSubmissionHandler(AppDbContext db)
 {
     public async Task<SubmissionResponse?> HandleAsync(
         Guid id,
-        string deviceId,
+        string userId,
         CancellationToken ct = default)
     {
         return await db.Submissions
-            .Where(s => s.Id == id && s.DeviceId == deviceId)
+            .Where(s => s.Id == id && s.UserId == userId)
             .Select(s => new SubmissionResponse(
                 s.Id,
                 s.Label,

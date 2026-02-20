@@ -15,11 +15,12 @@ import { api } from "./api/api";
 import themeReducer from "./store/theme-slice";
 import progressReducer from "./store/progress-slice";
 import activeSubmissionReducer from "./store/active-submission-slice";
+import authReducer from "./store/auth-slice";
 
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: ["theme", "progress", "activeSubmission"],
+  whitelist: ["theme", "progress", "activeSubmission", "auth"],
 };
 
 const rootReducer = combineReducers({
@@ -27,6 +28,7 @@ const rootReducer = combineReducers({
   theme: themeReducer,
   progress: progressReducer,
   activeSubmission: activeSubmissionReducer,
+  auth: authReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

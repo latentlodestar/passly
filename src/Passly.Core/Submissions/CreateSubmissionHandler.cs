@@ -8,6 +8,7 @@ namespace Passly.Core.Submissions;
 public sealed class CreateSubmissionHandler(AppDbContext db, IClock clock)
 {
     public async Task<SubmissionResponse> HandleAsync(
+        string userId,
         CreateSubmissionRequest request,
         CancellationToken ct = default)
     {
@@ -16,7 +17,7 @@ public sealed class CreateSubmissionHandler(AppDbContext db, IClock clock)
         var entity = new Submission
         {
             Id = Guid.NewGuid(),
-            DeviceId = request.DeviceId,
+            UserId = userId,
             Label = request.Label,
             Status = SubmissionStatus.Active,
             CurrentStep = SubmissionStep.GetStarted,

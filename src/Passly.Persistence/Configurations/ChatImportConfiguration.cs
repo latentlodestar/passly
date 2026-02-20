@@ -12,7 +12,7 @@ internal sealed class ChatImportConfiguration : IEntityTypeConfiguration<ChatImp
 
         builder.HasKey(e => e.Id);
 
-        builder.Property(e => e.DeviceId).IsRequired();
+        builder.Property(e => e.UserId).IsRequired();
         builder.Property(e => e.SubmissionId).IsRequired();
         builder.Property(e => e.FileName).IsRequired();
         builder.Property(e => e.FileHash).IsRequired();
@@ -23,8 +23,8 @@ internal sealed class ChatImportConfiguration : IEntityTypeConfiguration<ChatImp
         builder.Property(e => e.Iv).IsRequired();
         builder.Property(e => e.Tag).IsRequired();
 
-        builder.HasIndex(e => e.DeviceId);
-        builder.HasIndex(e => new { e.DeviceId, e.FileHash }).IsUnique();
+        builder.HasIndex(e => e.UserId);
+        builder.HasIndex(e => new { e.UserId, e.FileHash }).IsUnique();
 
         builder.HasOne(e => e.Submission)
             .WithMany(s => s.ChatImports)

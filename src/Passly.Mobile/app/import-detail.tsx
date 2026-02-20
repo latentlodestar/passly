@@ -13,7 +13,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, spacing, fontSize, fontWeight, radius, type ColorScheme } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useDeviceId } from '@/hooks/use-device-id';
 import { usePassphrase } from '@/hooks/use-passphrase';
 import { useGetChatImportMessagesQuery } from '@/api/api';
 import { Badge } from '@/components/ui/Badge';
@@ -233,7 +232,6 @@ export default function ImportDetailScreen() {
   const t = colors[scheme];
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const deviceId = useDeviceId();
   const { passphrase } = usePassphrase();
 
   const [allMessages, setAllMessages] = useState<ChatMessageResponse[]>([]);
@@ -243,12 +241,11 @@ export default function ImportDetailScreen() {
   const { data, isLoading, isFetching, isError } = useGetChatImportMessagesQuery(
     {
       id: id ?? '',
-      deviceId: deviceId ?? '',
       passphrase: passphrase ?? '',
       skip: page * PAGE_SIZE,
       take: PAGE_SIZE,
     },
-    { skip: !id || !deviceId || !passphrase },
+    { skip: !id || !passphrase },
   );
 
   // Append new pages as they arrive

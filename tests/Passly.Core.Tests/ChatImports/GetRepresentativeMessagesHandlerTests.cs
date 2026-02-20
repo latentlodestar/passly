@@ -17,7 +17,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
     private readonly IMessageCurator _curator;
     private readonly GetRepresentativeMessagesHandler _sut;
 
-    private const string DeviceId = "device-1";
+    private const string UserId = "user-1";
     private const string Passphrase = "test-passphrase-123";
 
     public GetRepresentativeMessagesHandlerTests()
@@ -37,7 +37,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
     public async Task HandleAsync_ImportNotFound_ReturnsNotFoundError()
     {
         var (response, error) = await _sut.HandleAsync(
-            Guid.NewGuid(), DeviceId, Passphrase, 50);
+            Guid.NewGuid(), UserId, Passphrase, 50);
 
         response.Should().BeNull();
         error.Should().Be(GetRepresentativeMessagesError.NotFound);
@@ -61,7 +61,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
         var import = await SeedImport(ChatImportStatus.Pending);
 
         var (response, error) = await _sut.HandleAsync(
-            import.Id, DeviceId, Passphrase, 50);
+            import.Id, UserId, Passphrase, 50);
 
         response.Should().BeNull();
         error.Should().Be(GetRepresentativeMessagesError.NotParsed);
@@ -92,7 +92,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
             .Returns(curationResult);
 
         var (response, error) = await _sut.HandleAsync(
-            import.Id, DeviceId, Passphrase, 50);
+            import.Id, UserId, Passphrase, 50);
 
         error.Should().BeNull();
         response.Should().NotBeNull();
@@ -116,7 +116,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
                 Arg.Any<CancellationToken>())
             .Returns(new CurationResult([], []));
 
-        await _sut.HandleAsync(import.Id, DeviceId, Passphrase, 42);
+        await _sut.HandleAsync(import.Id, UserId, Passphrase, 42);
 
         await _curator.Received(1).CurateAsync(
             Arg.Any<IReadOnlyList<DecryptedMessage>>(),
@@ -139,7 +139,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
                 Arg.Any<CancellationToken>())
             .Returns(new CurationResult([], []));
 
-        await _sut.HandleAsync(import.Id, DeviceId, Passphrase, 50);
+        await _sut.HandleAsync(import.Id, UserId, Passphrase, 50);
 
         _encryption.Received(3).Decrypt(
             Arg.Any<byte[]>(), Passphrase, Arg.Any<byte[]>(), Arg.Any<byte[]>(), Arg.Any<byte[]>());
@@ -155,7 +155,7 @@ public sealed class GetRepresentativeMessagesHandlerTests : IDisposable
         var import = new ChatImport
         {
             Id = Guid.NewGuid(),
-            DeviceId = DeviceId,
+            UserId = UserId,
             SubmissionId = Guid.NewGuid(),
             FileName = "chat.txt",
             FileHash = "abc123",

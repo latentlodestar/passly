@@ -7,12 +7,12 @@ namespace Passly.Core.ChatImports;
 public sealed class GetChatImportsHandler(AppDbContext db)
 {
     public async Task<IReadOnlyList<ChatImportSummaryResponse>> HandleAsync(
-        string deviceId,
+        string userId,
         Guid submissionId,
         CancellationToken ct = default)
     {
         return await db.ChatImports
-            .Where(c => c.DeviceId == deviceId && c.SubmissionId == submissionId)
+            .Where(c => c.UserId == userId && c.SubmissionId == submissionId)
             .OrderByDescending(c => c.CreatedAt)
             .Select(c => new ChatImportSummaryResponse(
                 c.Id,

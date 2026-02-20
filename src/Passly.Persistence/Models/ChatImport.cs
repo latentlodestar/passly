@@ -5,7 +5,7 @@ namespace Passly.Persistence.Models;
 public sealed class ChatImport
 {
     public Guid Id { get; set; }
-    public required string DeviceId { get; set; }
+    public required string UserId { get; set; }
     public Guid SubmissionId { get; set; }
     public required string FileName { get; set; }
     public required string FileHash { get; set; }

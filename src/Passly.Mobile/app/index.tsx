@@ -7,7 +7,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
 import { stepToRoute } from '@/constants/steps';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useDeviceId } from '@/hooks/use-device-id';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setActiveSubmission, clearActiveSubmission } from '@/store/active-submission-slice';
 import {
@@ -24,7 +23,6 @@ export default function HomeScreen() {
   const t = colors[scheme];
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const deviceId = useDeviceId();
   const activeId = useAppSelector((s) => s.activeSubmission.id);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -32,14 +30,10 @@ export default function HomeScreen() {
     useCreateSubmissionMutation();
   const [deleteSubmission] = useDeleteSubmissionMutation();
 
-  const { data: submissions = [] } = useGetSubmissionsQuery(deviceId ?? '', {
-    skip: !deviceId,
-  });
+  const { data: submissions = [] } = useGetSubmissionsQuery();
 
   const handleCreate = async () => {
-    if (!deviceId) return;
     const result = await createSubmission({
-      deviceId,
       label: `Petition ${new Date().toLocaleDateString()}`,
     }).unwrap();
     dispatch(setActiveSubmission(result.id));
@@ -72,8 +66,7 @@ export default function HomeScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            if (!deviceId) return;
-            await deleteSubmission({ id: sub.id, deviceId });
+            await deleteSubmission({ id: sub.id });
             if (sub.id === activeId) {
               dispatch(clearActiveSubmission());
             }
@@ -128,7 +121,7 @@ export default function HomeScreen() {
               label={isCreating ? 'Creating...' : 'Create petition'}
               size="lg"
               onPress={handleCreate}
-              disabled={isCreating || !deviceId}
+              disabled={isCreating}
             />
             {submissions.length > 0 && (
               <Button

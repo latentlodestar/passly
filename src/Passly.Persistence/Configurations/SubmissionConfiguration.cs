@@ -12,11 +12,11 @@ internal sealed class SubmissionConfiguration : IEntityTypeConfiguration<Submiss
 
         builder.HasKey(e => e.Id);
 
-        builder.Property(e => e.DeviceId).IsRequired();
+        builder.Property(e => e.UserId).IsRequired();
         builder.Property(e => e.Label).IsRequired();
         builder.Property(e => e.Status).HasConversion<string>().IsRequired();
         builder.Property(e => e.CurrentStep).HasConversion<string>().IsRequired();
 
-        builder.HasIndex(e => e.DeviceId);
+        builder.HasIndex(e => e.UserId);
     }
 }

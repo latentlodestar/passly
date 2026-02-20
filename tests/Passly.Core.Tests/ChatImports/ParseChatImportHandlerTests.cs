@@ -152,7 +152,7 @@ public sealed class ParseChatImportHandlerTests : IDisposable
         var entity = new ChatImport
         {
             Id = Guid.NewGuid(),
-            DeviceId = "device-1",
+            UserId = "user-1",
             SubmissionId = Guid.NewGuid(),
             FileName = "chat.txt",
             FileHash = "abc123",

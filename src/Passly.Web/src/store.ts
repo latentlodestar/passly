@@ -2,11 +2,13 @@ import { configureStore } from "@reduxjs/toolkit";
 import { useDispatch, useSelector } from "react-redux";
 import { api } from "./api/api";
 import activeSubmissionReducer from "./store/activeSubmissionSlice";
+import authReducer from "./store/authSlice";
 
 export const store = configureStore({
   reducer: {
     [api.reducerPath]: api.reducer,
     activeSubmission: activeSubmissionReducer,
+    auth: authReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(api.middleware),

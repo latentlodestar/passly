@@ -14,12 +14,13 @@ public sealed class GenerateSubmissionSummaryHandler(
 {
     public async Task<(SubmissionSummaryResponse? Response, GenerateSubmissionSummaryError? Error)> HandleAsync(
         Guid submissionId,
+        string userId,
         GenerateSubmissionSummaryRequest request,
         CancellationToken ct = default)
     {
         var submission = await db.Submissions
             .Include(s => s.Summary)
-            .FirstOrDefaultAsync(s => s.Id == submissionId && s.DeviceId == request.DeviceId, ct);
+            .FirstOrDefaultAsync(s => s.Id == submissionId && s.UserId == userId, ct);
 
         if (submission is null)
             return (null, GenerateSubmissionSummaryError.SubmissionNotFound);

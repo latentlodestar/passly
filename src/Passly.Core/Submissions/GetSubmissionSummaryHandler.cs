@@ -12,13 +12,13 @@ public sealed class GetSubmissionSummaryHandler(
 {
     public async Task<(byte[]? PdfBytes, SubmissionSummaryResponse? Metadata, GetSubmissionSummaryError? Error)> HandleAsync(
         Guid submissionId,
-        string deviceId,
+        string userId,
         string passphrase,
         CancellationToken ct = default)
     {
         var submission = await db.Submissions
             .Include(s => s.Summary)
-            .FirstOrDefaultAsync(s => s.Id == submissionId && s.DeviceId == deviceId, ct);
+            .FirstOrDefaultAsync(s => s.Id == submissionId && s.UserId == userId, ct);
 
         if (submission is null)
             return (null, null, GetSubmissionSummaryError.SubmissionNotFound);

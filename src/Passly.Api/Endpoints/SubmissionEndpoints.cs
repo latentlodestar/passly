@@ -1,4 +1,5 @@
 using Passly.Abstractions.Contracts;
+using Passly.Api.Auth;
 using Passly.Core.Submissions;
 
 namespace Passly.Api.Endpoints;
@@ -9,93 +10,88 @@ public static class SubmissionEndpoints
     {
         app.MapPost("/api/submissions", async (
             CreateSubmissionRequest request,
+            HttpContext httpContext,
             CreateSubmissionHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(request.DeviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
             if (string.IsNullOrWhiteSpace(request.Label))
                 return Results.BadRequest(new { error = "label is required." });
 
-            var response = await handler.HandleAsync(request, ct);
+            var userId = httpContext.GetUserId();
+            var response = await handler.HandleAsync(userId, request, ct);
             return Results.Created($"/api/submissions/{response.Id}", response);
         })
+        .RequireAuthorization()
         .WithName("CreateSubmission")
         .WithTags("Submissions");
 
         app.MapGet("/api/submissions", async (
-            string deviceId,
+            HttpContext httpContext,
             GetSubmissionsHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
-            return Results.Ok(await handler.HandleAsync(deviceId, ct));
+            var userId = httpContext.GetUserId();
+            return Results.Ok(await handler.HandleAsync(userId, ct));
         })
+        .RequireAuthorization()
         .WithName("GetSubmissions")
         .WithTags("Submissions");
 
         app.MapGet("/api/submissions/{id:guid}", async (
             Guid id,
-            string deviceId,
+            HttpContext httpContext,
             GetSubmissionHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
-            var response = await handler.HandleAsync(id, deviceId, ct);
+            var userId = httpContext.GetUserId();
+            var response = await handler.HandleAsync(id, userId, ct);
             return response is not null ? Results.Ok(response) : Results.NotFound();
         })
+        .RequireAuthorization()
         .WithName("GetSubmission")
         .WithTags("Submissions");
 
         app.MapDelete("/api/submissions/{id:guid}", async (
             Guid id,
-            string deviceId,
+            HttpContext httpContext,
             DeleteSubmissionHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
-            var deleted = await handler.HandleAsync(id, deviceId, ct);
+            var userId = httpContext.GetUserId();
+            var deleted = await handler.HandleAsync(id, userId, ct);
             return deleted ? Results.NoContent() : Results.NotFound();
         })
+        .RequireAuthorization()
         .WithName("DeleteSubmission")
         .WithTags("Submissions");
 
         app.MapPatch("/api/submissions/{id:guid}/step", async (
             Guid id,
-            string deviceId,
             UpdateSubmissionStepRequest request,
+            HttpContext httpContext,
             UpdateSubmissionStepHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
-            var response = await handler.HandleAsync(id, deviceId, request, ct);
+            var userId = httpContext.GetUserId();
+            var response = await handler.HandleAsync(id, userId, request, ct);
             return response is not null ? Results.Ok(response) : Results.NotFound();
         })
+        .RequireAuthorization()
         .WithName("UpdateSubmissionStep")
         .WithTags("Submissions");
 
         app.MapPost("/api/submissions/{id:guid}/analyze", async (
             Guid id,
             AnalyzeSubmissionRequest request,
+            HttpContext httpContext,
             AnalyzeSubmissionHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(request.DeviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
             if (string.IsNullOrWhiteSpace(request.Passphrase))
                 return Results.BadRequest(new { error = "passphrase is required." });
 
-            var (response, error) = await handler.HandleAsync(id, request, ct);
+            var userId = httpContext.GetUserId();
+            var (response, error) = await handler.HandleAsync(id, userId, request, ct);
 
             return error switch
             {
@@ -110,22 +106,22 @@ public static class SubmissionEndpoints
                 _ => Results.StatusCode(500),
             };
         })
+        .RequireAuthorization()
         .WithName("AnalyzeSubmission")
         .WithTags("Submissions");
 
         app.MapPost("/api/submissions/{id:guid}/summary", async (
             Guid id,
             GenerateSubmissionSummaryRequest request,
+            HttpContext httpContext,
             GenerateSubmissionSummaryHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(request.DeviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
             if (string.IsNullOrWhiteSpace(request.Passphrase))
                 return Results.BadRequest(new { error = "passphrase is required." });
 
-            var (response, error) = await handler.HandleAsync(id, request, ct);
+            var userId = httpContext.GetUserId();
+            var (response, error) = await handler.HandleAsync(id, userId, request, ct);
 
             return error switch
             {
@@ -144,38 +140,36 @@ public static class SubmissionEndpoints
                 _ => Results.StatusCode(500),
             };
         })
+        .RequireAuthorization()
         .WithName("GenerateSubmissionSummary")
         .WithTags("Submissions");
 
         app.MapGet("/api/submissions/{id:guid}/summary", async (
             Guid id,
-            string deviceId,
+            HttpContext httpContext,
             GetSubmissionSummaryMetadataHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
-            var response = await handler.HandleAsync(id, deviceId, ct);
+            var userId = httpContext.GetUserId();
+            var response = await handler.HandleAsync(id, userId, ct);
             return response is not null ? Results.Ok(response) : Results.NotFound();
         })
+        .RequireAuthorization()
         .WithName("GetSubmissionSummary")
         .WithTags("Submissions");
 
         app.MapGet("/api/submissions/{id:guid}/summary/content", async (
             Guid id,
-            string deviceId,
             string passphrase,
+            HttpContext httpContext,
             GetSubmissionSummaryContentHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
             if (string.IsNullOrWhiteSpace(passphrase))
                 return Results.BadRequest(new { error = "passphrase is required." });
 
-            var (content, error) = await handler.HandleAsync(id, deviceId, passphrase, ct);
+            var userId = httpContext.GetUserId();
+            var (content, error) = await handler.HandleAsync(id, userId, passphrase, ct);
 
             return error switch
             {
@@ -187,23 +181,22 @@ public static class SubmissionEndpoints
                 _ => Results.StatusCode(500),
             };
         })
+        .RequireAuthorization()
         .WithName("GetSubmissionSummaryContent")
         .WithTags("Submissions");
 
         app.MapGet("/api/submissions/{id:guid}/summary/download", async (
             Guid id,
-            string deviceId,
             string passphrase,
+            HttpContext httpContext,
             GetSubmissionSummaryHandler handler,
             CancellationToken ct) =>
         {
-            if (string.IsNullOrWhiteSpace(deviceId))
-                return Results.BadRequest(new { error = "deviceId is required." });
-
             if (string.IsNullOrWhiteSpace(passphrase))
                 return Results.BadRequest(new { error = "passphrase is required." });
 
-            var (pdfBytes, _, error) = await handler.HandleAsync(id, deviceId, passphrase, ct);
+            var userId = httpContext.GetUserId();
+            var (pdfBytes, _, error) = await handler.HandleAsync(id, userId, passphrase, ct);
 
             return error switch
             {
@@ -215,6 +208,7 @@ public static class SubmissionEndpoints
                 _ => Results.StatusCode(500),
             };
         })
+        .RequireAuthorization()
         .WithName("DownloadSubmissionSummary")
         .WithTags("Submissions");
 

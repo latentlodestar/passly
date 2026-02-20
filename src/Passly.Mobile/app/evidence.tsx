@@ -20,7 +20,6 @@ import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/desig
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { reportStep } from '@/store/progress-slice';
-import { useDeviceId } from '@/hooks/use-device-id';
 import { usePassphrase } from '@/hooks/use-passphrase';
 import { useStepSync } from '@/hooks/use-step-sync';
 import { useGetChatImportsQuery, useUploadChatExportMutation } from '@/api/api';
@@ -255,14 +254,13 @@ export default function EvidenceScreen() {
   useEffect(() => { dispatch(reportStep(0)); }, [dispatch]);
   useStepSync('ImportEvidence');
 
-  const deviceId = useDeviceId();
   const activeSubmissionId = useAppSelector((s) => s.activeSubmission.id);
   const { passphrase, isLoaded: passphraseLoaded } = usePassphrase();
   const [shouldPoll, setShouldPoll] = useState(false);
   const { data: imports = [] } = useGetChatImportsQuery(
-    { deviceId: deviceId ?? '', submissionId: activeSubmissionId ?? '' },
+    { submissionId: activeSubmissionId ?? '' },
     {
-      skip: !deviceId || !activeSubmissionId,
+      skip: !activeSubmissionId,
       pollingInterval: shouldPoll ? 3000 : 0,
     },
   );
@@ -284,7 +282,7 @@ export default function EvidenceScreen() {
   /* ---- Upload ---- */
 
   const uploadFile = useCallback(async (fileUri: string, fileName: string, mimeType: string) => {
-    if (!deviceId || !passphrase || !activeSubmissionId) return;
+    if (!passphrase || !activeSubmissionId) return;
 
     const uploadKey = `${fileName}-${Date.now()}`;
     setLocalUploads((prev) => ({ ...prev, [uploadKey]: { fileName, status: 'uploading' } }));
@@ -300,7 +298,6 @@ export default function EvidenceScreen() {
         formData.append('file', { uri: fileUri, name: fileName, type: mimeType } as unknown as Blob);
       }
 
-      formData.append('deviceId', deviceId);
       formData.append('submissionId', activeSubmissionId);
       formData.append('passphrase', passphrase);
 
@@ -321,7 +318,7 @@ export default function EvidenceScreen() {
         [uploadKey]: { fileName, status: 'error', error: message },
       }));
     }
-  }, [deviceId, activeSubmissionId, passphrase, uploadChatExport]);
+  }, [activeSubmissionId, passphrase, uploadChatExport]);
 
   /* ---- Share intent ---- */
 

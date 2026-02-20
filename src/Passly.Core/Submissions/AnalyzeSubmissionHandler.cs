@@ -16,12 +16,13 @@ public sealed class AnalyzeSubmissionHandler(
 {
     public async Task<(SubmissionSummaryResponse? Response, AnalyzeSubmissionError? Error)> HandleAsync(
         Guid submissionId,
+        string userId,
         AnalyzeSubmissionRequest request,
         CancellationToken ct = default)
     {
         var submission = await db.Submissions
             .Include(s => s.Summary)
-            .FirstOrDefaultAsync(s => s.Id == submissionId && s.DeviceId == request.DeviceId, ct);
+            .FirstOrDefaultAsync(s => s.Id == submissionId && s.UserId == userId, ct);
 
         if (submission is null)
             return (null, AnalyzeSubmissionError.SubmissionNotFound);
@@ -30,7 +31,7 @@ public sealed class AnalyzeSubmissionHandler(
             return (null, AnalyzeSubmissionError.AnalysisAlreadyExists);
 
         var import = await db.ChatImports
-            .Where(c => c.Id == request.ChatImportId && c.DeviceId == request.DeviceId)
+            .Where(c => c.Id == request.ChatImportId && c.UserId == userId)
             .Select(c => new { c.Id, c.Status })
             .FirstOrDefaultAsync(ct);
 
@@ -125,7 +126,7 @@ public sealed class AnalyzeSubmissionHandler(
     private sealed record MessagePayload(string SenderName, string Content);
 }
 
-public sealed record AnalyzeSubmissionRequest(string DeviceId, string Passphrase, Guid ChatImportId);
+public sealed record AnalyzeSubmissionRequest(string Passphrase, Guid ChatImportId);
 
 public enum AnalyzeSubmissionError
 {

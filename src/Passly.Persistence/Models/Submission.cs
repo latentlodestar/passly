@@ -5,7 +5,7 @@ namespace Passly.Persistence.Models;
 public sealed class Submission
 {
     public Guid Id { get; set; }
-    public required string DeviceId { get; set; }
+    public required string UserId { get; set; }
     public required string Label { get; set; }
     public SubmissionStatus Status { get; set; }
     public SubmissionStep CurrentStep { get; set; }
