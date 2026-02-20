@@ -3,6 +3,8 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
+  enable_full_stack = var.environment != "dev"
+  enable_dev_minimal = var.environment == "dev"
   prefix = "passly-${var.environment}"
   azs    = slice(data.aws_availability_zones.available.names, 0, 2)
 

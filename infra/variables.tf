@@ -3,8 +3,8 @@ variable "environment" {
   type        = string
 
   validation {
-    condition     = contains(["staging", "prod"], var.environment)
-    error_message = "Environment must be 'staging' or 'prod'."
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "Environment must be 'dev', 'staging', or 'prod'."
   }
 }
 
@@ -108,4 +108,10 @@ variable "db_name" {
   description = "PostgreSQL database name"
   type        = string
   default     = "passly"
+}
+
+variable "dev_app_principal_arn" {
+  description = "IAM principal ARN allowed to assume the dev hybrid app role."
+  type        = string
+  default     = ""
 }

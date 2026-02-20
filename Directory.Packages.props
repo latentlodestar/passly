@@ -2,30 +2,27 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
-
   <ItemGroup Label="Aspire">
     <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.0" />
     <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.1.0" />
     <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="13.1.0" />
+    <PackageVersion Include="AWSSDK.SQS" Version="4.0.2.14" />
+    <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.2.14" />
   </ItemGroup>
-
   <ItemGroup Label="Messaging">
     <PackageVersion Include="Rebus" Version="8.9.0" />
     <PackageVersion Include="Rebus.ServiceProvider" Version="10.7.2" />
     <PackageVersion Include="Rebus.AmazonSqs" Version="7.0.0" />
   </ItemGroup>
-
   <ItemGroup Label="Auth">
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
   </ItemGroup>
-
   <ItemGroup Label="Application">
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.0" />
     <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.21.0" />
     <PackageVersion Include="QuestPDF" Version="2024.12.2" />
   </ItemGroup>
-
   <ItemGroup Label="EF Core">
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2" />
@@ -34,7 +31,6 @@
     <PackageVersion Include="Pgvector" Version="0.3.2" />
     <PackageVersion Include="Pgvector.EntityFrameworkCore" Version="0.3.0" />
   </ItemGroup>
-
   <ItemGroup Label="Service Defaults">
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.0.0" />
@@ -44,7 +40,6 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
   </ItemGroup>
-
   <ItemGroup Label="Testing">
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />

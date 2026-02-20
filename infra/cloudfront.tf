@@ -1,4 +1,6 @@
 resource "aws_cloudfront_origin_access_control" "web" {
+  count = local.enable_full_stack ? 1 : 0
+
   name                              = "${local.prefix}-web-oac"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
@@ -6,6 +8,7 @@ resource "aws_cloudfront_origin_access_control" "web" {
 }
 
 resource "aws_cloudfront_distribution" "main" {
+  count               = local.enable_full_stack ? 1 : 0
   enabled             = true
   default_root_object = "index.html"
   aliases             = var.domain_name != "" ? [var.domain_name] : []
@@ -13,14 +16,14 @@ resource "aws_cloudfront_distribution" "main" {
 
   # S3 origin — static web assets
   origin {
-    domain_name              = aws_s3_bucket.web.bucket_regional_domain_name
+    domain_name              = aws_s3_bucket.web[0].bucket_regional_domain_name
     origin_id                = "s3-web"
-    origin_access_control_id = aws_cloudfront_origin_access_control.web.id
+    origin_access_control_id = aws_cloudfront_origin_access_control.web[0].id
   }
 
   # ALB origin — API
   origin {
-    domain_name = aws_lb.main.dns_name
+    domain_name = aws_lb.main[0].dns_name
     origin_id   = "alb-api"
 
     custom_origin_config {

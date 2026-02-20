@@ -3,9 +3,11 @@
 ################################################################################
 
 resource "aws_security_group" "alb" {
+  count = local.enable_full_stack ? 1 : 0
+
   name_prefix = "${local.prefix}-alb-"
   description = "ALB security group"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = aws_vpc.main[0].id
 
   tags = { Name = "${local.prefix}-alb-sg" }
 
@@ -15,7 +17,8 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "alb_http" {
-  security_group_id = aws_security_group.alb.id
+  count             = local.enable_full_stack ? 1 : 0
+  security_group_id = aws_security_group.alb[0].id
   cidr_ipv4         = "0.0.0.0/0"
   from_port         = 80
   to_port           = 80
@@ -23,7 +26,8 @@ resource "aws_vpc_security_group_ingress_rule" "alb_http" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "alb_https" {
-  security_group_id = aws_security_group.alb.id
+  count             = local.enable_full_stack ? 1 : 0
+  security_group_id = aws_security_group.alb[0].id
   cidr_ipv4         = "0.0.0.0/0"
   from_port         = 443
   to_port           = 443
@@ -31,8 +35,9 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "alb_to_ecs" {
-  security_group_id            = aws_security_group.alb.id
-  referenced_security_group_id = aws_security_group.ecs_api.id
+  count                        = local.enable_full_stack ? 1 : 0
+  security_group_id            = aws_security_group.alb[0].id
+  referenced_security_group_id = aws_security_group.ecs_api[0].id
   from_port                    = 8080
   to_port                      = 8080
   ip_protocol                  = "tcp"
@@ -43,9 +48,11 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_ecs" {
 ################################################################################
 
 resource "aws_security_group" "ecs_api" {
+  count = local.enable_full_stack ? 1 : 0
+
   name_prefix = "${local.prefix}-ecs-api-"
   description = "ECS API tasks security group"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = aws_vpc.main[0].id
 
   tags = { Name = "${local.prefix}-ecs-api-sg" }
 
@@ -55,15 +62,17 @@ resource "aws_security_group" "ecs_api" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "ecs_api_from_alb" {
-  security_group_id            = aws_security_group.ecs_api.id
-  referenced_security_group_id = aws_security_group.alb.id
+  count                        = local.enable_full_stack ? 1 : 0
+  security_group_id            = aws_security_group.ecs_api[0].id
+  referenced_security_group_id = aws_security_group.alb[0].id
   from_port                    = 8080
   to_port                      = 8080
   ip_protocol                  = "tcp"
 }
 
 resource "aws_vpc_security_group_egress_rule" "ecs_api_all" {
-  security_group_id = aws_security_group.ecs_api.id
+  count             = local.enable_full_stack ? 1 : 0
+  security_group_id = aws_security_group.ecs_api[0].id
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
 }
@@ -73,9 +82,11 @@ resource "aws_vpc_security_group_egress_rule" "ecs_api_all" {
 ################################################################################
 
 resource "aws_security_group" "ecs_worker" {
+  count = local.enable_full_stack ? 1 : 0
+
   name_prefix = "${local.prefix}-ecs-worker-"
   description = "ECS Worker tasks security group"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = aws_vpc.main[0].id
 
   tags = { Name = "${local.prefix}-ecs-worker-sg" }
 
@@ -85,7 +96,8 @@ resource "aws_security_group" "ecs_worker" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "ecs_worker_all" {
-  security_group_id = aws_security_group.ecs_worker.id
+  count             = local.enable_full_stack ? 1 : 0
+  security_group_id = aws_security_group.ecs_worker[0].id
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
 }
@@ -95,9 +107,11 @@ resource "aws_vpc_security_group_egress_rule" "ecs_worker_all" {
 ################################################################################
 
 resource "aws_security_group" "aurora" {
+  count = local.enable_full_stack ? 1 : 0
+
   name_prefix = "${local.prefix}-aurora-"
   description = "Aurora security group"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = aws_vpc.main[0].id
 
   tags = { Name = "${local.prefix}-aurora-sg" }
 
@@ -107,16 +121,18 @@ resource "aws_security_group" "aurora" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "aurora_from_api" {
-  security_group_id            = aws_security_group.aurora.id
-  referenced_security_group_id = aws_security_group.ecs_api.id
+  count                        = local.enable_full_stack ? 1 : 0
+  security_group_id            = aws_security_group.aurora[0].id
+  referenced_security_group_id = aws_security_group.ecs_api[0].id
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "tcp"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "aurora_from_worker" {
-  security_group_id            = aws_security_group.aurora.id
-  referenced_security_group_id = aws_security_group.ecs_worker.id
+  count                        = local.enable_full_stack ? 1 : 0
+  security_group_id            = aws_security_group.aurora[0].id
+  referenced_security_group_id = aws_security_group.ecs_worker[0].id
   from_port                    = 5432
   to_port                      = 5432
   ip_protocol                  = "tcp"

@@ -1,3 +1,5 @@
+using Amazon.Runtime;
+using Amazon.SecurityToken;
 using Amazon.SQS;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -26,9 +28,22 @@ builder.Services.AddRebus(cfg =>
     if (messagingTransport == "sqs")
     {
         var region = builder.Configuration["Messaging:Region"] ?? "us-east-1";
+        var assumeRoleArn = builder.Configuration["AWS:AssumeRoleArn"];
+        var regionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region);
+        var sqsConfig = new AmazonSQSConfig { RegionEndpoint = regionEndpoint };
+        var sqsCredentials = FallbackCredentialsFactory.GetCredentials();
+
+        if (!string.IsNullOrWhiteSpace(assumeRoleArn))
+        {
+            sqsCredentials = new AssumeRoleAWSCredentials(
+                sqsCredentials,
+                assumeRoleArn,
+                $"passly-{builder.Environment.EnvironmentName.ToLowerInvariant()}");
+        }
 
         cfg.Transport(t => t.UseAmazonSQSAsOneWayClient(
-            new AmazonSQSConfig { RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(region) },
+            sqsCredentials,
+            sqsConfig,
             new AmazonSQSTransportOptions()));
     }
     else

@@ -1,4 +1,6 @@
 resource "aws_rds_cluster" "main" {
+  count = local.enable_full_stack ? 1 : 0
+
   cluster_identifier = "${local.prefix}-aurora"
   engine             = "aurora-postgresql"
   engine_mode        = "provisioned"
@@ -8,8 +10,8 @@ resource "aws_rds_cluster" "main" {
 
   manage_master_user_password = true
 
-  db_subnet_group_name   = aws_db_subnet_group.main.name
-  vpc_security_group_ids = [aws_security_group.aurora.id]
+  db_subnet_group_name   = aws_db_subnet_group.main[0].name
+  vpc_security_group_ids = [aws_security_group.aurora[0].id]
 
   skip_final_snapshot       = var.environment == "staging"
   final_snapshot_identifier = var.environment == "prod" ? "${local.prefix}-final-snapshot" : null
@@ -23,10 +25,11 @@ resource "aws_rds_cluster" "main" {
 }
 
 resource "aws_rds_cluster_instance" "main" {
-  cluster_identifier = aws_rds_cluster.main.id
+  count              = local.enable_full_stack ? 1 : 0
+  cluster_identifier = aws_rds_cluster.main[0].id
   instance_class     = "db.serverless"
-  engine             = aws_rds_cluster.main.engine
-  engine_version     = aws_rds_cluster.main.engine_version
+  engine             = aws_rds_cluster.main[0].engine
+  engine_version     = aws_rds_cluster.main[0].engine_version
 
   tags = { Name = "${local.prefix}-aurora-instance" }
 }

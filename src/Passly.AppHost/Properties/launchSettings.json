@@ -10,7 +10,9 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "DOTNET_ENVIRONMENT": "Development",
         "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "https://localhost:21130",
-        "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "https://localhost:22130"
+        "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "https://localhost:22130",
+        "Parameters__cognito-authority": "https://cognito-idp.us-east-1.amazonaws",
+        "Parameters__cognito-client-id": "2rvi61us488ughge97ktdqc6je"
       }
     }
   }

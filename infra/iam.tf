@@ -13,11 +13,14 @@ data "aws_iam_policy_document" "ecs_assume" {
 }
 
 resource "aws_iam_role" "ecs_execution" {
+  count              = local.enable_full_stack ? 1 : 0
   name               = "${local.prefix}-ecs-execution"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
 }
 
 data "aws_iam_policy_document" "ecs_execution" {
+  count = local.enable_full_stack ? 1 : 0
+
   statement {
     sid = "ECR"
     actions = [
@@ -34,20 +37,21 @@ data "aws_iam_policy_document" "ecs_execution" {
       "logs:CreateLogStream",
       "logs:PutLogEvents",
     ]
-    resources = ["${aws_cloudwatch_log_group.api.arn}:*", "${aws_cloudwatch_log_group.worker.arn}:*", "${aws_cloudwatch_log_group.migration_runner.arn}:*"]
+    resources = ["${aws_cloudwatch_log_group.api[0].arn}:*", "${aws_cloudwatch_log_group.worker[0].arn}:*", "${aws_cloudwatch_log_group.migration_runner[0].arn}:*"]
   }
 
   statement {
     sid       = "Secrets"
     actions   = ["secretsmanager:GetSecretValue"]
-    resources = [aws_rds_cluster.main.master_user_secret[0].secret_arn]
+    resources = [aws_rds_cluster.main[0].master_user_secret[0].secret_arn]
   }
 }
 
 resource "aws_iam_role_policy" "ecs_execution" {
+  count  = local.enable_full_stack ? 1 : 0
   name   = "${local.prefix}-ecs-execution"
-  role   = aws_iam_role.ecs_execution.id
-  policy = data.aws_iam_policy_document.ecs_execution.json
+  role   = aws_iam_role.ecs_execution[0].id
+  policy = data.aws_iam_policy_document.ecs_execution[0].json
 }
 
 ################################################################################
@@ -55,11 +59,14 @@ resource "aws_iam_role_policy" "ecs_execution" {
 ################################################################################
 
 resource "aws_iam_role" "api_task" {
+  count              = local.enable_full_stack ? 1 : 0
   name               = "${local.prefix}-api-task"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
 }
 
 data "aws_iam_policy_document" "api_task" {
+  count = local.enable_full_stack ? 1 : 0
+
   statement {
     sid = "SQSSend"
     actions = [
@@ -72,9 +79,10 @@ data "aws_iam_policy_document" "api_task" {
 }
 
 resource "aws_iam_role_policy" "api_task" {
+  count  = local.enable_full_stack ? 1 : 0
   name   = "${local.prefix}-api-task"
-  role   = aws_iam_role.api_task.id
-  policy = data.aws_iam_policy_document.api_task.json
+  role   = aws_iam_role.api_task[0].id
+  policy = data.aws_iam_policy_document.api_task[0].json
 }
 
 ################################################################################
@@ -82,11 +90,14 @@ resource "aws_iam_role_policy" "api_task" {
 ################################################################################
 
 resource "aws_iam_role" "worker_task" {
+  count              = local.enable_full_stack ? 1 : 0
   name               = "${local.prefix}-worker-task"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
 }
 
 data "aws_iam_policy_document" "worker_task" {
+  count = local.enable_full_stack ? 1 : 0
+
   statement {
     sid = "SQSConsume"
     actions = [
@@ -117,9 +128,10 @@ data "aws_iam_policy_document" "worker_task" {
 }
 
 resource "aws_iam_role_policy" "worker_task" {
+  count  = local.enable_full_stack ? 1 : 0
   name   = "${local.prefix}-worker-task"
-  role   = aws_iam_role.worker_task.id
-  policy = data.aws_iam_policy_document.worker_task.json
+  role   = aws_iam_role.worker_task[0].id
+  policy = data.aws_iam_policy_document.worker_task[0].json
 }
 
 ################################################################################
@@ -127,8 +139,86 @@ resource "aws_iam_role_policy" "worker_task" {
 ################################################################################
 
 resource "aws_iam_role" "migration_runner_task" {
+  count              = local.enable_full_stack ? 1 : 0
   name               = "${local.prefix}-migration-runner-task"
   assume_role_policy = data.aws_iam_policy_document.ecs_assume.json
+}
+
+################################################################################
+# Dev Hybrid App Role (local + AWS)
+################################################################################
+
+data "aws_iam_policy_document" "dev_app_assume" {
+  count = local.enable_dev_minimal ? 1 : 0
+
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "AWS"
+      identifiers = [var.dev_app_principal_arn]
+    }
+  }
+}
+
+resource "aws_iam_role" "dev_app" {
+  count              = local.enable_dev_minimal ? 1 : 0
+  name               = "${local.prefix}-app"
+  assume_role_policy = data.aws_iam_policy_document.dev_app_assume[0].json
+
+  lifecycle {
+    precondition {
+      condition     = var.dev_app_principal_arn != ""
+      error_message = "dev_app_principal_arn must be set when environment is dev."
+    }
+  }
+}
+
+data "aws_iam_policy_document" "dev_app" {
+  count = local.enable_dev_minimal ? 1 : 0
+
+  statement {
+    sid = "CognitoUserPoolAdmin"
+    actions = [
+      "cognito-idp:AdminCreateUser",
+      "cognito-idp:AdminDeleteUser",
+      "cognito-idp:AdminDisableUser",
+      "cognito-idp:AdminEnableUser",
+      "cognito-idp:AdminGetUser",
+      "cognito-idp:AdminInitiateAuth",
+      "cognito-idp:AdminRespondToAuthChallenge",
+      "cognito-idp:AdminResetUserPassword",
+      "cognito-idp:AdminSetUserMFAPreference",
+      "cognito-idp:AdminSetUserPassword",
+      "cognito-idp:AdminUpdateUserAttributes",
+      "cognito-idp:AdminUserGlobalSignOut",
+      "cognito-idp:ListUsers",
+      "cognito-idp:SetUserMFAPreference",
+    ]
+    resources = [aws_cognito_user_pool.main.arn]
+  }
+
+  statement {
+    sid = "SQSImports"
+    actions = [
+      "sqs:SendMessage",
+      "sqs:GetQueueUrl",
+      "sqs:GetQueueAttributes",
+      "sqs:ReceiveMessage",
+      "sqs:DeleteMessage",
+      "sqs:ChangeMessageVisibility",
+    ]
+    resources = [
+      aws_sqs_queue.imports.arn,
+      aws_sqs_queue.imports_dlq.arn,
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "dev_app" {
+  count  = local.enable_dev_minimal ? 1 : 0
+  name   = "${local.prefix}-app"
+  role   = aws_iam_role.dev_app[0].id
+  policy = data.aws_iam_policy_document.dev_app[0].json
 }
 
 ################################################################################
@@ -136,17 +226,20 @@ resource "aws_iam_role" "migration_runner_task" {
 ################################################################################
 
 data "aws_iam_openid_connect_provider" "github" {
+  count = local.enable_full_stack ? 1 : 0
   url = "https://token.actions.githubusercontent.com"
 }
 
 data "aws_caller_identity" "current" {}
 
 data "aws_iam_policy_document" "github_actions_assume" {
+  count = local.enable_full_stack ? 1 : 0
+
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
     principals {
       type        = "Federated"
-      identifiers = [data.aws_iam_openid_connect_provider.github.arn]
+      identifiers = [data.aws_iam_openid_connect_provider.github[0].arn]
     }
     condition {
       test     = "StringEquals"
@@ -162,11 +255,14 @@ data "aws_iam_policy_document" "github_actions_assume" {
 }
 
 resource "aws_iam_role" "github_actions" {
+  count              = local.enable_full_stack ? 1 : 0
   name               = "${local.prefix}-github-actions"
-  assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume[0].json
 }
 
 data "aws_iam_policy_document" "github_actions" {
+  count = local.enable_full_stack ? 1 : 0
+
   statement {
     sid = "ECR"
     actions = [
@@ -200,10 +296,10 @@ data "aws_iam_policy_document" "github_actions" {
     sid       = "PassRole"
     actions   = ["iam:PassRole"]
     resources = [
-      aws_iam_role.ecs_execution.arn,
-      aws_iam_role.api_task.arn,
-      aws_iam_role.worker_task.arn,
-      aws_iam_role.migration_runner_task.arn,
+      aws_iam_role.ecs_execution[0].arn,
+      aws_iam_role.api_task[0].arn,
+      aws_iam_role.worker_task[0].arn,
+      aws_iam_role.migration_runner_task[0].arn,
     ]
   }
 
@@ -215,20 +311,21 @@ data "aws_iam_policy_document" "github_actions" {
       "s3:ListBucket",
     ]
     resources = [
-      aws_s3_bucket.web.arn,
-      "${aws_s3_bucket.web.arn}/*",
+      aws_s3_bucket.web[0].arn,
+      "${aws_s3_bucket.web[0].arn}/*",
     ]
   }
 
   statement {
     sid       = "CloudFront"
     actions   = ["cloudfront:CreateInvalidation"]
-    resources = [aws_cloudfront_distribution.main.arn]
+    resources = [aws_cloudfront_distribution.main[0].arn]
   }
 }
 
 resource "aws_iam_role_policy" "github_actions" {
+  count  = local.enable_full_stack ? 1 : 0
   name   = "${local.prefix}-github-actions"
-  role   = aws_iam_role.github_actions.id
-  policy = data.aws_iam_policy_document.github_actions.json
+  role   = aws_iam_role.github_actions[0].id
+  policy = data.aws_iam_policy_document.github_actions[0].json
 }

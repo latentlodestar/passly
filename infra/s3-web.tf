@@ -1,4 +1,6 @@
 resource "aws_s3_bucket" "web" {
+  count = local.enable_full_stack ? 1 : 0
+
   bucket        = "${local.prefix}-web"
   force_destroy = var.environment == "staging"
 
@@ -6,7 +8,8 @@ resource "aws_s3_bucket" "web" {
 }
 
 resource "aws_s3_bucket_public_access_block" "web" {
-  bucket = aws_s3_bucket.web.id
+  count  = local.enable_full_stack ? 1 : 0
+  bucket = aws_s3_bucket.web[0].id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -15,7 +18,8 @@ resource "aws_s3_bucket_public_access_block" "web" {
 }
 
 resource "aws_s3_bucket_policy" "web" {
-  bucket = aws_s3_bucket.web.id
+  count  = local.enable_full_stack ? 1 : 0
+  bucket = aws_s3_bucket.web[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -24,10 +28,10 @@ resource "aws_s3_bucket_policy" "web" {
       Effect    = "Allow"
       Principal = { Service = "cloudfront.amazonaws.com" }
       Action    = "s3:GetObject"
-      Resource  = "${aws_s3_bucket.web.arn}/*"
+      Resource  = "${aws_s3_bucket.web[0].arn}/*"
       Condition = {
         StringEquals = {
-          "AWS:SourceArn" = aws_cloudfront_distribution.main.arn
+          "AWS:SourceArn" = aws_cloudfront_distribution.main[0].arn
         }
       }
     }]

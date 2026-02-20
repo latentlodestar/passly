@@ -1,4 +1,6 @@
 resource "aws_cloudwatch_log_group" "api" {
+  count = local.enable_full_stack ? 1 : 0
+
   name              = "/ecs/${local.prefix}/api"
   retention_in_days = 30
 
@@ -6,6 +8,8 @@ resource "aws_cloudwatch_log_group" "api" {
 }
 
 resource "aws_cloudwatch_log_group" "worker" {
+  count = local.enable_full_stack ? 1 : 0
+
   name              = "/ecs/${local.prefix}/worker"
   retention_in_days = 30
 
@@ -13,6 +17,8 @@ resource "aws_cloudwatch_log_group" "worker" {
 }
 
 resource "aws_cloudwatch_log_group" "migration_runner" {
+  count = local.enable_full_stack ? 1 : 0
+
   name              = "/ecs/${local.prefix}/migration-runner"
   retention_in_days = 14
 
@@ -20,6 +26,7 @@ resource "aws_cloudwatch_log_group" "migration_runner" {
 }
 
 resource "aws_cloudwatch_dashboard" "health" {
+  count          = local.enable_full_stack ? 1 : 0
   dashboard_name = "${local.prefix}-health"
 
   dashboard_body = jsonencode({
@@ -37,7 +44,7 @@ resource "aws_cloudwatch_dashboard" "health" {
           stat   = "Sum"
           period = 60
           metrics = [
-            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", aws_lb.main.arn_suffix]
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", aws_lb.main[0].arn_suffix]
           ]
         }
       },
@@ -53,9 +60,9 @@ resource "aws_cloudwatch_dashboard" "health" {
           stat   = "Sum"
           period = 60
           metrics = [
-            ["AWS/ApplicationELB", "HTTPCode_Target_2XX_Count", "TargetGroup", aws_lb_target_group.api.arn_suffix, "LoadBalancer", aws_lb.main.arn_suffix],
-            ["AWS/ApplicationELB", "HTTPCode_Target_4XX_Count", "TargetGroup", aws_lb_target_group.api.arn_suffix, "LoadBalancer", aws_lb.main.arn_suffix],
-            ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "TargetGroup", aws_lb_target_group.api.arn_suffix, "LoadBalancer", aws_lb.main.arn_suffix]
+            ["AWS/ApplicationELB", "HTTPCode_Target_2XX_Count", "TargetGroup", aws_lb_target_group.api[0].arn_suffix, "LoadBalancer", aws_lb.main[0].arn_suffix],
+            ["AWS/ApplicationELB", "HTTPCode_Target_4XX_Count", "TargetGroup", aws_lb_target_group.api[0].arn_suffix, "LoadBalancer", aws_lb.main[0].arn_suffix],
+            ["AWS/ApplicationELB", "HTTPCode_Target_5XX_Count", "TargetGroup", aws_lb_target_group.api[0].arn_suffix, "LoadBalancer", aws_lb.main[0].arn_suffix]
           ]
         }
       },
@@ -70,8 +77,8 @@ resource "aws_cloudwatch_dashboard" "health" {
           region = var.aws_region
           period = 60
           metrics = [
-            ["AWS/ApplicationELB", "TargetResponseTime", "TargetGroup", aws_lb_target_group.api.arn_suffix, "LoadBalancer", aws_lb.main.arn_suffix, { stat = "Average" }],
-            ["AWS/ApplicationELB", "TargetResponseTime", "TargetGroup", aws_lb_target_group.api.arn_suffix, "LoadBalancer", aws_lb.main.arn_suffix, { stat = "p99" }]
+            ["AWS/ApplicationELB", "TargetResponseTime", "TargetGroup", aws_lb_target_group.api[0].arn_suffix, "LoadBalancer", aws_lb.main[0].arn_suffix, { stat = "Average" }],
+            ["AWS/ApplicationELB", "TargetResponseTime", "TargetGroup", aws_lb_target_group.api[0].arn_suffix, "LoadBalancer", aws_lb.main[0].arn_suffix, { stat = "p99" }]
           ]
         }
       },
@@ -87,8 +94,8 @@ resource "aws_cloudwatch_dashboard" "health" {
           stat   = "Average"
           period = 60
           metrics = [
-            ["AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", aws_lb_target_group.api.arn_suffix, "LoadBalancer", aws_lb.main.arn_suffix],
-            ["AWS/ApplicationELB", "UnHealthyHostCount", "TargetGroup", aws_lb_target_group.api.arn_suffix, "LoadBalancer", aws_lb.main.arn_suffix]
+            ["AWS/ApplicationELB", "HealthyHostCount", "TargetGroup", aws_lb_target_group.api[0].arn_suffix, "LoadBalancer", aws_lb.main[0].arn_suffix],
+            ["AWS/ApplicationELB", "UnHealthyHostCount", "TargetGroup", aws_lb_target_group.api[0].arn_suffix, "LoadBalancer", aws_lb.main[0].arn_suffix]
           ]
         }
       },
@@ -106,7 +113,7 @@ resource "aws_cloudwatch_dashboard" "health" {
           stat   = "Average"
           period = 60
           metrics = [
-            ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", aws_rds_cluster_instance.main.identifier]
+            ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", aws_rds_cluster_instance.main[0].identifier]
           ]
         }
       },
@@ -122,7 +129,7 @@ resource "aws_cloudwatch_dashboard" "health" {
           stat   = "Average"
           period = 60
           metrics = [
-            ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", aws_rds_cluster_instance.main.identifier]
+            ["AWS/RDS", "DatabaseConnections", "DBInstanceIdentifier", aws_rds_cluster_instance.main[0].identifier]
           ]
         }
       },
@@ -138,7 +145,7 @@ resource "aws_cloudwatch_dashboard" "health" {
           stat   = "Average"
           period = 60
           metrics = [
-            ["AWS/RDS", "ServerlessDatabaseCapacity", "DBClusterIdentifier", aws_rds_cluster.main.cluster_identifier]
+            ["AWS/RDS", "ServerlessDatabaseCapacity", "DBClusterIdentifier", aws_rds_cluster.main[0].cluster_identifier]
           ]
         }
       },
@@ -154,8 +161,8 @@ resource "aws_cloudwatch_dashboard" "health" {
           stat   = "Average"
           period = 60
           metrics = [
-            ["AWS/RDS", "CommitLatency", "DBClusterIdentifier", aws_rds_cluster.main.cluster_identifier],
-            ["AWS/RDS", "SelectLatency", "DBClusterIdentifier", aws_rds_cluster.main.cluster_identifier]
+            ["AWS/RDS", "CommitLatency", "DBClusterIdentifier", aws_rds_cluster.main[0].cluster_identifier],
+            ["AWS/RDS", "SelectLatency", "DBClusterIdentifier", aws_rds_cluster.main[0].cluster_identifier]
           ]
         }
       },
@@ -171,8 +178,8 @@ resource "aws_cloudwatch_dashboard" "health" {
           stat   = "Average"
           period = 60
           metrics = [
-            ["AWS/RDS", "ReadIOPS", "DBInstanceIdentifier", aws_rds_cluster_instance.main.identifier],
-            ["AWS/RDS", "WriteIOPS", "DBInstanceIdentifier", aws_rds_cluster_instance.main.identifier]
+            ["AWS/RDS", "ReadIOPS", "DBInstanceIdentifier", aws_rds_cluster_instance.main[0].identifier],
+            ["AWS/RDS", "WriteIOPS", "DBInstanceIdentifier", aws_rds_cluster_instance.main[0].identifier]
           ]
         }
       },

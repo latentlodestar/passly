@@ -1,4 +1,6 @@
 resource "aws_ecr_repository" "api" {
+  count = local.enable_full_stack ? 1 : 0
+
   name                 = "${local.prefix}-api"
   image_tag_mutability = "IMMUTABLE"
   force_delete         = var.environment == "staging"
@@ -11,6 +13,8 @@ resource "aws_ecr_repository" "api" {
 }
 
 resource "aws_ecr_repository" "worker" {
+  count = local.enable_full_stack ? 1 : 0
+
   name                 = "${local.prefix}-worker"
   image_tag_mutability = "IMMUTABLE"
   force_delete         = var.environment == "staging"
@@ -23,6 +27,8 @@ resource "aws_ecr_repository" "worker" {
 }
 
 resource "aws_ecr_repository" "migration_runner" {
+  count = local.enable_full_stack ? 1 : 0
+
   name                 = "${local.prefix}-migration-runner"
   image_tag_mutability = "IMMUTABLE"
   force_delete         = var.environment == "staging"
@@ -35,11 +41,11 @@ resource "aws_ecr_repository" "migration_runner" {
 }
 
 locals {
-  ecr_repos = {
-    api              = aws_ecr_repository.api.name
-    worker           = aws_ecr_repository.worker.name
-    migration_runner = aws_ecr_repository.migration_runner.name
-  }
+  ecr_repos = local.enable_full_stack ? {
+    api              = aws_ecr_repository.api[0].name
+    worker           = aws_ecr_repository.worker[0].name
+    migration_runner = aws_ecr_repository.migration_runner[0].name
+  } : {}
 }
 
 resource "aws_ecr_lifecycle_policy" "keep_recent" {

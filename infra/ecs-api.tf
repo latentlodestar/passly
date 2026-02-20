@@ -1,15 +1,16 @@
 resource "aws_ecs_task_definition" "api" {
+  count                    = local.enable_full_stack ? 1 : 0
   family                   = "${local.prefix}-api"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = var.api_cpu
   memory                   = var.api_memory
-  execution_role_arn       = aws_iam_role.ecs_execution.arn
-  task_role_arn            = aws_iam_role.api_task.arn
+  execution_role_arn       = aws_iam_role.ecs_execution[0].arn
+  task_role_arn            = aws_iam_role.api_task[0].arn
 
   container_definitions = jsonencode([{
     name      = "api"
-    image     = "${aws_ecr_repository.api.repository_url}:latest"
+    image     = "${aws_ecr_repository.api[0].repository_url}:latest"
     essential = true
 
     portMappings = [{
@@ -35,7 +36,7 @@ resource "aws_ecs_task_definition" "api" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.api.name
+        "awslogs-group"         = aws_cloudwatch_log_group.api[0].name
         "awslogs-region"        = var.aws_region
         "awslogs-stream-prefix" = "api"
       }
@@ -46,20 +47,21 @@ resource "aws_ecs_task_definition" "api" {
 }
 
 resource "aws_ecs_service" "api" {
+  count           = local.enable_full_stack ? 1 : 0
   name            = "${local.prefix}-api"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.api.arn
+  cluster         = aws_ecs_cluster.main[0].id
+  task_definition = aws_ecs_task_definition.api[0].arn
   desired_count   = var.api_desired_count
   launch_type     = "FARGATE"
 
   network_configuration {
     subnets          = aws_subnet.public[*].id
-    security_groups  = [aws_security_group.ecs_api.id]
+    security_groups  = [aws_security_group.ecs_api[0].id]
     assign_public_ip = true
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.api.arn
+    target_group_arn = aws_lb_target_group.api[0].arn
     container_name   = "api"
     container_port   = 8080
   }
