@@ -7,7 +7,8 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { createLogger } from "./lib/logger";
 import { store } from "./store";
 import "./styles/index.css";
-
+import { Buffer } from "buffer";
+(window as any).Buffer = Buffer;
 const logger = createLogger("Global");
 
 window.addEventListener("error", (event) => {

@@ -26,6 +26,7 @@ resource "aws_ecs_task_definition" "api" {
       { name = "Messaging__QueueName", value = aws_sqs_queue.imports.name },
       { name = "Auth__CognitoAuthority", value = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.main.id}" },
       { name = "Auth__CognitoClientId", value = aws_cognito_user_pool_client.main.id },
+      { name = "Auth__CognitoClientIds", value = "${aws_cognito_user_pool_client.main.id},${aws_cognito_user_pool_client.mobile.id}" },
     ]
 
     secrets = [{

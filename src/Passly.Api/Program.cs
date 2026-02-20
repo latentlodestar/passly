@@ -60,12 +60,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.Authority = builder.Configuration["Auth:CognitoAuthority"];
+        var clientIds = builder.Configuration.GetSection("Auth:CognitoClientIds").Get<string[]>();
+        if (clientIds is null || clientIds.Length == 0)
+        {
+            var combinedClientIds = builder.Configuration["Auth:CognitoClientIds"];
+            if (!string.IsNullOrWhiteSpace(combinedClientIds))
+            {
+                clientIds = combinedClientIds.Split(
+                    ',',
+                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            }
+            else
+            {
+                var singleClientId = builder.Configuration["Auth:CognitoClientId"];
+                clientIds = string.IsNullOrWhiteSpace(singleClientId)
+                    ? Array.Empty<string>()
+                    : singleClientId.Split(
+                        ',',
+                        StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            }
+        }
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
             ValidateIssuer = true,
             ValidateAudience = true,
-            ValidAudience = builder.Configuration["Auth:CognitoClientId"],
+            ValidAudiences = clientIds,
             ValidateLifetime = true,
         };
     });
