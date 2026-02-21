@@ -20,7 +20,7 @@ import authReducer from "./store/auth-slice";
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,
-  whitelist: ["theme", "progress", "activeSubmission", "auth"],
+  whitelist: ["theme", "progress", "activeSubmission"],
 };
 
 const rootReducer = combineReducers({

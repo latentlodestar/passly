@@ -34,7 +34,7 @@ public sealed class CreateChatImportHandler(
         var fileHash = Convert.ToHexString(SHA256.HashData(rawContent)).ToLowerInvariant();
 
         var exists = await db.ChatImports
-            .AnyAsync(c => c.UserId == userId && c.FileHash == fileHash, ct);
+            .AnyAsync(c => c.SubmissionId == submissionId && c.FileHash == fileHash, ct);
 
         if (exists)
             return (null, true, null);

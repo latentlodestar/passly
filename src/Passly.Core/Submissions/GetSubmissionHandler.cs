@@ -19,7 +19,8 @@ public sealed class GetSubmissionHandler(AppDbContext db)
                 s.Status.ToString(),
                 s.CurrentStep.ToString(),
                 s.CreatedAt,
-                s.UpdatedAt))
+                s.UpdatedAt,
+                s.Summary != null && s.Summary.EncryptedPdf != null))
             .FirstOrDefaultAsync(ct);
     }
 }

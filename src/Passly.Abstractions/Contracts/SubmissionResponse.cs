@@ -6,4 +6,5 @@ public sealed record SubmissionResponse(
     string Status,
     string CurrentStep,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt);
+    DateTimeOffset UpdatedAt,
+    bool HasPdf);

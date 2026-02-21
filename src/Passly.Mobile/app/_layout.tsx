@@ -6,6 +6,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { ShareIntentProvider } from 'expo-share-intent';
 import { useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -87,12 +88,14 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <ShareIntentProvider>
-          <RootNavigator />
-        </ShareIntentProvider>
-      </PersistGate>
-    </Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <ShareIntentProvider>
+            <RootNavigator />
+          </ShareIntentProvider>
+        </PersistGate>
+      </Provider>
+    </GestureHandlerRootView>
   );
 }

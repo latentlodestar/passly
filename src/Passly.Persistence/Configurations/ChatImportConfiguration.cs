@@ -24,7 +24,7 @@ internal sealed class ChatImportConfiguration : IEntityTypeConfiguration<ChatImp
         builder.Property(e => e.Tag).IsRequired();
 
         builder.HasIndex(e => e.UserId);
-        builder.HasIndex(e => new { e.UserId, e.FileHash }).IsUnique();
+        builder.HasIndex(e => new { e.SubmissionId, e.FileHash }).IsUnique();
 
         builder.HasOne(e => e.Submission)
             .WithMany(s => s.ChatImports)

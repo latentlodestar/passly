@@ -32,5 +32,5 @@ public sealed class CreateSubmissionHandler(AppDbContext db, IClock clock)
     }
 
     internal static SubmissionResponse ToResponse(Submission entity) =>
-        new(entity.Id, entity.Label, entity.Status.ToString(), entity.CurrentStep.ToString(), entity.CreatedAt, entity.UpdatedAt);
+        new(entity.Id, entity.Label, entity.Status.ToString(), entity.CurrentStep.ToString(), entity.CreatedAt, entity.UpdatedAt, entity.Summary?.EncryptedPdf is not null);
 }

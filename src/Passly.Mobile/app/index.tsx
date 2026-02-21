@@ -1,14 +1,18 @@
-import { Alert, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRef } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import * as WebBrowser from 'expo-web-browser';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
 import { stepToRoute } from '@/constants/steps';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { usePassphrase } from '@/hooks/use-passphrase';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setActiveSubmission, clearActiveSubmission } from '@/store/active-submission-slice';
+import { getIdToken } from '@/auth/cognito';
 import {
   useCreateSubmissionMutation,
   useGetSubmissionsQuery,
@@ -18,13 +22,93 @@ import { Button } from '@/components/ui/Button';
 import { SettingsFab } from '@/components/ui/AppHeader';
 import type { SubmissionResponse } from '@/types';
 
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:5192';
+
+// ---- PetitionRow ----
+
+type PetitionRowProps = {
+  sub: SubmissionResponse;
+  isLast: boolean;
+  onResume: (sub: SubmissionResponse) => void;
+  onDelete: (sub: SubmissionResponse) => void;
+};
+
+function PetitionRow({ sub, isLast, onResume, onDelete }: PetitionRowProps) {
+  const scheme = useColorScheme() ?? 'light';
+  const t = colors[scheme];
+  const { passphrase } = usePassphrase();
+  const swipeRef = useRef<Swipeable>(null);
+
+  const handleDownloadPdf = async () => {
+    swipeRef.current?.close();
+    if (!passphrase) return;
+    const token = await getIdToken();
+    const url =
+      `${API_BASE_URL}/api/submissions/${sub.id}/summary/download` +
+      `?passphrase=${encodeURIComponent(passphrase)}` +
+      (token ? `&token=${encodeURIComponent(token)}` : '');
+    await WebBrowser.openBrowserAsync(url);
+  };
+
+  const handleDelete = () => {
+    swipeRef.current?.close();
+    onDelete(sub);
+  };
+
+  const renderRightActions = () => (
+    <View style={styles.swipeActions}>
+      {sub.hasPdf && (
+        <Pressable
+          onPress={handleDownloadPdf}
+          style={[styles.swipeAction, { backgroundColor: t.primary }]}
+        >
+          <MaterialIcons name="picture-as-pdf" size={20} color="#fff" />
+          <Text style={styles.swipeActionLabel}>PDF</Text>
+        </Pressable>
+      )}
+      <Pressable
+        onPress={handleDelete}
+        style={[styles.swipeAction, { backgroundColor: t.danger }]}
+      >
+        <MaterialIcons name="delete-outline" size={20} color="#fff" />
+        <Text style={styles.swipeActionLabel}>Delete</Text>
+      </Pressable>
+    </View>
+  );
+
+  return (
+    <Swipeable ref={swipeRef} renderRightActions={renderRightActions} overshootRight={false}>
+      <Pressable
+        onPress={() => onResume(sub)}
+        style={({ pressed }) => [
+          styles.petitionRow,
+          {
+            backgroundColor: pressed ? t.surface2 : t.surface,
+            borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth,
+            borderBottomColor: t.border,
+          },
+        ]}
+      >
+        <View style={styles.petitionInfo}>
+          <Text style={[styles.petitionLabel, { color: t.fg }]}>{sub.label}</Text>
+          <Text style={[styles.petitionMeta, { color: t.muted }]}>
+            {sub.status} · {new Date(sub.createdAt).toLocaleDateString()}
+          </Text>
+        </View>
+        <MaterialIcons name="chevron-right" size={20} color={t.muted} />
+      </Pressable>
+    </Swipeable>
+  );
+}
+
+// ---- HomeScreen ----
+
 export default function HomeScreen() {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
   const router = useRouter();
   const dispatch = useAppDispatch();
   const activeId = useAppSelector((s) => s.activeSubmission.id);
-  const [modalVisible, setModalVisible] = useState(false);
 
   const [createSubmission, { isLoading: isCreating }] =
     useCreateSubmissionMutation();
@@ -40,23 +124,12 @@ export default function HomeScreen() {
     router.push('/evidence');
   };
 
-  const handleResume = () => {
-    if (submissions.length === 1) {
-      const sub = submissions[0];
-      dispatch(setActiveSubmission(sub.id));
-      router.push(stepToRoute(sub.currentStep) as '/evidence');
-    } else if (submissions.length > 1) {
-      setModalVisible(true);
-    }
-  };
-
-  const handleSelectPetition = (sub: SubmissionResponse) => {
+  const handleResume = (sub: SubmissionResponse) => {
     dispatch(setActiveSubmission(sub.id));
-    setModalVisible(false);
     router.push(stepToRoute(sub.currentStep) as '/evidence');
   };
 
-  const handleDeletePetition = (sub: SubmissionResponse) => {
+  const handleDelete = (sub: SubmissionResponse) => {
     Alert.alert(
       'Delete petition',
       `Are you sure you want to delete "${sub.label}"? This cannot be undone.`,
@@ -76,31 +149,6 @@ export default function HomeScreen() {
     );
   };
 
-  const renderPetitionRow = ({ item: sub }: { item: SubmissionResponse }) => (
-    <View style={[styles.petitionRow, { backgroundColor: t.surface, borderColor: t.border }]}>
-      <View style={styles.petitionInfo}>
-        <Text style={[styles.petitionLabel, { color: t.fg }]}>{sub.label}</Text>
-        <Text style={[styles.petitionMeta, { color: t.muted }]}>
-          {sub.status} · {new Date(sub.createdAt).toLocaleDateString()}
-        </Text>
-      </View>
-      <View style={styles.petitionActions}>
-        <Pressable
-          onPress={() => handleDeletePetition(sub)}
-          hitSlop={8}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-        >
-          <MaterialIcons name="delete-outline" size={22} color={t.danger} />
-        </Pressable>
-        <Button
-          label="Resume"
-          size="sm"
-          onPress={() => handleSelectPetition(sub)}
-        />
-      </View>
-    </View>
-  );
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]}>
       <ScrollView
@@ -115,7 +163,6 @@ export default function HomeScreen() {
             Passly helps you structure your petition, analyze supporting
             evidence, and identify documentation gaps.
           </Text>
-
           <View style={styles.actions}>
             <Button
               label={isCreating ? 'Creating...' : 'Create petition'}
@@ -123,53 +170,26 @@ export default function HomeScreen() {
               onPress={handleCreate}
               disabled={isCreating}
             />
-            {submissions.length > 0 && (
-              <Button
-                label="Resume petition"
-                variant="secondary"
-                size="lg"
-                onPress={handleResume}
-              />
-            )}
           </View>
         </View>
-      </ScrollView>
 
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setModalVisible(false)}
-        >
-          <Pressable
-            style={[styles.modalContent, { backgroundColor: t.surface }]}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: t.fg }]}>
-                Select a petition
-              </Text>
-              <Pressable
-                onPress={() => setModalVisible(false)}
-                hitSlop={8}
-                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-              >
-                <MaterialIcons name="close" size={24} color={t.muted} />
-              </Pressable>
+        {submissions.length > 0 && (
+          <View style={styles.petitionsSection}>
+            <Text style={[styles.sectionTitle, { color: t.muted }]}>YOUR PETITIONS</Text>
+            <View style={[styles.petitionList, { borderColor: t.border, backgroundColor: t.surface }]}>
+              {submissions.map((sub, index) => (
+                <PetitionRow
+                  key={sub.id}
+                  sub={sub}
+                  isLast={index === submissions.length - 1}
+                  onResume={handleResume}
+                  onDelete={handleDelete}
+                />
+              ))}
             </View>
-            <FlatList
-              data={submissions}
-              keyExtractor={(item) => item.id}
-              renderItem={renderPetitionRow}
-              contentContainerStyle={styles.modalList}
-            />
-          </Pressable>
-        </Pressable>
-      </Modal>
+          </View>
+        )}
+      </ScrollView>
 
       <SettingsFab />
     </SafeAreaView>
@@ -206,44 +226,30 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: spacing.sm,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
-  modalContent: {
-    borderRadius: radius.xl,
-    maxHeight: '70%',
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.base,
-    paddingBottom: spacing.sm,
-  },
-  modalTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
-  },
-  modalList: {
-    padding: spacing.base,
-    paddingTop: 0,
+  petitionsSection: {
     gap: spacing.sm,
+  },
+  sectionTitle: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: 0.8,
+    marginLeft: spacing.sm,
+  },
+  petitionList: {
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
   },
   petitionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.md,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
   },
   petitionInfo: {
     flex: 1,
-    gap: 2,
+    gap: 3,
   },
   petitionLabel: {
     fontSize: fontSize.sm,
@@ -252,9 +258,18 @@ const styles = StyleSheet.create({
   petitionMeta: {
     fontSize: fontSize.xs,
   },
-  petitionActions: {
+  swipeActions: {
     flexDirection: 'row',
+  },
+  swipeAction: {
+    width: 72,
     alignItems: 'center',
-    gap: spacing.sm,
+    justifyContent: 'center',
+    gap: 4,
+  },
+  swipeActionLabel: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: '#fff',
   },
 });

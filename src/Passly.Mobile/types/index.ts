@@ -28,6 +28,7 @@ export interface SubmissionResponse {
   currentStep: string;
   createdAt: string;
   updatedAt: string;
+  hasPdf: boolean;
 }
 
 export interface CreateSubmissionRequest {

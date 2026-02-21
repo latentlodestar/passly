@@ -5,7 +5,6 @@ export const processSteps = [
 ];
 
 const stepRouteMap: Record<string, string> = {
-  GetStarted: '/',
   ImportEvidence: '/evidence',
   ReviewComplete: '/checklist',
 };
