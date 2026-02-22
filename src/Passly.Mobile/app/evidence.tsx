@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,20 +19,13 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { reportStep } from '@/store/progress-slice';
+import { useAppSelector } from '@/store';
 import { usePassphrase } from '@/hooks/use-passphrase';
 import { useStepSync } from '@/hooks/use-step-sync';
 import { useGetChatImportsQuery, useUploadChatExportMutation } from '@/api/api';
 import { Button } from '@/components/ui/Button';
-import { Stepper } from '@/components/ui/Stepper';
+import { WorkflowHeader } from '@/components/ui/AppHeader';
 import type { ChatImportSummaryResponse } from '@/types';
-
-const processSteps = [
-  { label: 'Import evidence' },
-  { label: 'Review' },
-  { label: 'Summary' },
-];
 
 type LocalUpload = {
   fileName: string;
@@ -62,6 +56,78 @@ function mapLocalStatus(status: LocalUpload['status']): FileItem['status'] {
     case 'error': return 'failed';
   }
 }
+
+/* ------------------------------------------------------------------ */
+/*  AddEvidenceOption                                                  */
+/* ------------------------------------------------------------------ */
+
+function AddEvidenceOption({
+  icon,
+  label,
+  subtitle,
+  iconColor,
+  borderColor,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  label: string;
+  subtitle: string;
+  iconColor: string;
+  borderColor: string;
+  onPress: () => void;
+}) {
+  const scheme = useColorScheme() ?? 'light';
+  const t = colors[scheme];
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        optionStyles.row,
+        { borderBottomColor: borderColor },
+        pressed && { opacity: 0.6 },
+      ]}
+    >
+      <View style={[optionStyles.iconWrap, { backgroundColor: iconColor + '18' }]}>
+        <MaterialIcons name={icon} size={22} color={iconColor} />
+      </View>
+      <View style={optionStyles.text}>
+        <Text style={[optionStyles.label, { color: t.fg }]}>{label}</Text>
+        <Text style={[optionStyles.subtitle, { color: t.muted }]}>{subtitle}</Text>
+      </View>
+      <MaterialIcons name="chevron-right" size={20} color={t.muted} />
+    </Pressable>
+  );
+}
+
+const optionStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: spacing.md,
+  },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
+    flex: 1,
+    gap: 2,
+  },
+  label: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  subtitle: {
+    fontSize: fontSize.xs,
+    lineHeight: 16,
+  },
+});
 
 /* ------------------------------------------------------------------ */
 /*  BottomSheet                                                        */
@@ -247,11 +313,8 @@ export default function EvidenceScreen() {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
-  const maxReachedStep = useAppSelector((s) => s.progress.maxReachedStep);
 
-  useEffect(() => { dispatch(reportStep(0)); }, [dispatch]);
   useStepSync('ImportEvidence');
 
   const activeSubmissionId = useAppSelector((s) => s.activeSubmission.id);
@@ -268,6 +331,7 @@ export default function EvidenceScreen() {
   const [localUploads, setLocalUploads] = useState<Record<string, LocalUpload>>({});
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const [howToVisible, setHowToVisible] = useState(false);
+  const [addEvidenceSheetVisible, setAddEvidenceSheetVisible] = useState(false);
 
   useEffect(() => {
     const hasInProgress = imports.some(
@@ -397,7 +461,7 @@ export default function EvidenceScreen() {
     }
   };
 
-  /* ---- FAB ---- */
+  /* ---- Add evidence action sheet ---- */
 
   const handleFabPress = () => {
     if (!passphraseLoaded) return;
@@ -405,7 +469,39 @@ export default function EvidenceScreen() {
       router.push('/settings');
       return;
     }
-    pickFile(['text/plain', 'application/zip']);
+    setAddEvidenceSheetVisible(true);
+  };
+
+  const dismissSheetThen = (action: () => void) => {
+    setAddEvidenceSheetVisible(false);
+    setTimeout(action, 500);
+  };
+
+  const handleAddWhatsApp = () => {
+    dismissSheetThen(async () => {
+      const url = 'whatsapp://';
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(
+          'WhatsApp not found',
+          'Install WhatsApp, export a chat without media, then share the .txt or .zip file back to Passly.',
+        );
+      }
+    });
+  };
+
+  const handleAddSMS = () => {
+    dismissSheetThen(async () => {
+      await Linking.openURL('sms:');
+    });
+  };
+
+  const handleAddFile = () => {
+    dismissSheetThen(async () => {
+      await pickFile(['text/plain', 'application/zip']);
+    });
   };
 
   /* ---- Derived state ---- */
@@ -442,25 +538,14 @@ export default function EvidenceScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top', 'left', 'right']}>
+      <WorkflowHeader title="Import evidence" />
       <View ref={containerRef as React.Ref<View>} style={styles.container}>
         <ScrollView
           contentContainerStyle={[styles.scroll, { paddingBottom: 80 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.stepperWrap}>
-            <Stepper
-              steps={processSteps}
-              currentStep={0}
-              maxReachedStep={maxReachedStep}
-              onStepPress={(i) => {
-                const routes = ['/evidence', '/checklist', '/submit'] as const;
-                router.push(routes[i]);
-              }}
-            />
-          </View>
-
           {noPassphrase && (
-            <Pressable onPress={() => router.push('/settings')} style={styles.warningRow}>
+            <Pressable onPress={() => router.navigate('/(tabs)/settings')} style={styles.warningRow}>
               <MaterialIcons name="lock-outline" size={16} color={t.warning} />
               <Text style={[styles.warningText, { color: t.fg2 }]}>
                 Set up a passphrase in{' '}
@@ -539,6 +624,35 @@ export default function EvidenceScreen() {
         </View>
       </View>
 
+      {/* Add evidence sheet */}
+      <BottomSheet visible={addEvidenceSheetVisible} onClose={() => setAddEvidenceSheetVisible(false)}>
+        <Text style={[styles.sheetTitle, { color: t.fg }]}>Add evidence</Text>
+        <AddEvidenceOption
+          icon="chat"
+          label="WhatsApp"
+          subtitle="Export a chat, then share the file back here"
+          iconColor="#25D366"
+          borderColor={t.border}
+          onPress={handleAddWhatsApp}
+        />
+        <AddEvidenceOption
+          icon="sms"
+          label="iMessage · SMS"
+          subtitle="Export messages, then share the file back here"
+          iconColor={t.primary}
+          borderColor={t.border}
+          onPress={handleAddSMS}
+        />
+        <AddEvidenceOption
+          icon="folder-open"
+          label="File"
+          subtitle="Pick a .txt or .zip export from your files"
+          iconColor={t.fg2}
+          borderColor="transparent"
+          onPress={handleAddFile}
+        />
+      </BottomSheet>
+
       {/* How to export sheet */}
       <BottomSheet visible={howToVisible} onClose={() => setHowToVisible(false)}>
         <Text style={[styles.sheetTitle, { color: t.fg }]}>Export from WhatsApp</Text>
@@ -576,11 +690,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing['2xl'],
     gap: spacing.lg,
   },
-  stepperWrap: {
-    paddingHorizontal: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-
   /* Passphrase warning */
   warningRow: {
     flexDirection: 'row',

@@ -13,6 +13,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { store, persistor, useAppDispatch, useAppSelector } from '@/store';
 import { checkSession } from '@/store/auth-slice';
 import { hydrateAuthStorage } from '@/auth/cognito';
+import { Toast } from '@/components/ui/Toast';
 
 const AUTH_SCREENS = ['signin', 'signup', 'confirm', 'forgot-password'];
 
@@ -70,16 +71,12 @@ function RootNavigator() {
           <Stack.Screen name="signup" />
           <Stack.Screen name="confirm" />
           <Stack.Screen name="forgot-password" />
-          <Stack.Screen name="index" />
+          <Stack.Screen name="(tabs)" />
           <Stack.Screen name="evidence" />
           <Stack.Screen name="import-detail" />
           <Stack.Screen name="checklist" />
-          <Stack.Screen name="submit" />
-          <Stack.Screen
-            name="settings"
-            options={{ presentation: 'modal' }}
-          />
         </Stack>
+        <Toast />
       </AuthGate>
       <StatusBar style="auto" />
     </ThemeProvider>

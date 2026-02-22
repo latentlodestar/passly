@@ -16,6 +16,7 @@ import themeReducer from "./store/theme-slice";
 import progressReducer from "./store/progress-slice";
 import activeSubmissionReducer from "./store/active-submission-slice";
 import authReducer from "./store/auth-slice";
+import toastReducer from "./store/toast-slice";
 
 const persistConfig = {
   key: "root",
@@ -29,6 +30,7 @@ const rootReducer = combineReducers({
   progress: progressReducer,
   activeSubmission: activeSubmissionReducer,
   auth: authReducer,
+  toast: toastReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

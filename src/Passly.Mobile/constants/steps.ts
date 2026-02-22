@@ -1,7 +1,6 @@
 export const processSteps = [
   { label: 'Import evidence' },
   { label: 'Review' },
-  { label: 'Summary' },
 ];
 
 const stepRouteMap: Record<string, string> = {
@@ -12,7 +11,6 @@ const stepRouteMap: Record<string, string> = {
 const routeStepMap: Record<string, string> = {
   '/evidence': 'ImportEvidence',
   '/checklist': 'ReviewComplete',
-  '/submit': 'ReviewComplete',
 };
 
 export function stepToRoute(step: string): string {

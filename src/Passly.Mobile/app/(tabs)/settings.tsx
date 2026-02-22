@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -48,18 +48,9 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]}>
-      <View style={styles.header}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={[styles.title, { color: t.fg }]}>Settings</Text>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={8}
-          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-        >
-          <MaterialIcons name="close" size={24} color={t.muted} />
-        </Pressable>
-      </View>
 
-      <View style={styles.content}>
         {userEmail && (
           <Card>
             <CardHeader>Account</CardHeader>
@@ -152,7 +143,7 @@ export default function SettingsScreen() {
             />
           </CardBody>
         </Card>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -161,20 +152,14 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.base,
+  scroll: {
+    padding: spacing.xl,
+    paddingTop: spacing['2xl'],
+    gap: spacing.lg,
   },
   title: {
-    fontSize: fontSize.xl,
+    fontSize: fontSize['2xl'],
     fontWeight: fontWeight.bold,
-  },
-  content: {
-    padding: spacing.xl,
-    gap: spacing.lg,
   },
   emailText: {
     fontSize: fontSize.sm,

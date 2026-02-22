@@ -7,8 +7,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { reportStep } from '@/store/progress-slice';
+import { useAppSelector, useAppDispatch } from '@/store';
+import { showToast } from '@/store/toast-slice';
 import { useStepSync } from '@/hooks/use-step-sync';
 import { usePassphrase } from '@/hooks/use-passphrase';
 import {
@@ -18,28 +18,19 @@ import {
   useAnalyzeSubmissionMutation,
 } from '@/api/api';
 import { Button } from '@/components/ui/Button';
-import { Stepper } from '@/components/ui/Stepper';
 import { Alert } from '@/components/ui/Alert';
-import { SettingsFab } from '@/components/ui/AppHeader';
+import { WorkflowHeader } from '@/components/ui/AppHeader';
 import { SummaryContentView } from '@/components/SummaryContent';
 import type { ChatImportSummaryResponse } from '@/types';
-
-const processSteps = [
-  { label: 'Import evidence' },
-  { label: 'Review' },
-  { label: 'Summary' },
-];
 
 export default function ChecklistScreen() {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
-  const maxReachedStep = useAppSelector((s) => s.progress.maxReachedStep);
+  const dispatch = useAppDispatch();
   const activeSubmissionId = useAppSelector((s) => s.activeSubmission.id);
 
-  useEffect(() => { dispatch(reportStep(1)); }, [dispatch]);
   useStepSync('ReviewComplete');
 
   const { passphrase, isLoaded: passphraseLoaded } = usePassphrase();
@@ -119,20 +110,14 @@ export default function ChecklistScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top', 'left', 'right']}>
+      <WorkflowHeader title="Review" />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: 100 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.stepperWrap}>
-          <Stepper steps={processSteps} currentStep={1} maxReachedStep={maxReachedStep} onStepPress={(i) => {
-            const routes = ['/evidence', '/checklist', '/submit'] as const;
-            router.push(routes[i]);
-          }} />
-        </View>
-
         {/* Passphrase warning */}
         {noPassphrase && (
-          <Pressable onPress={() => router.push('/settings')} style={styles.warningRow}>
+          <Pressable onPress={() => router.navigate('/(tabs)/settings')} style={styles.warningRow}>
             <MaterialIcons name="lock-outline" size={16} color={t.warning} />
             <Text style={[styles.warningText, { color: t.fg2 }]}>
               Set up a passphrase in{' '}
@@ -207,8 +192,11 @@ export default function ChecklistScreen() {
       >
         {hasSummary && (
           <Button
-            label="Continue"
-            onPress={() => router.push('/submit')}
+            label="Done"
+            onPress={() => {
+              dispatch(showToast({ message: 'Analysis complete' }));
+              router.replace('/');
+            }}
           />
         )}
         <Button
@@ -229,10 +217,6 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     paddingTop: spacing['2xl'],
     gap: spacing.lg,
-  },
-  stepperWrap: {
-    paddingHorizontal: spacing.sm,
-    marginBottom: spacing.xs,
   },
   title: {
     fontSize: fontSize.xl,

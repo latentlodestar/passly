@@ -19,7 +19,6 @@ import {
   useDeleteSubmissionMutation,
 } from '@/api/api';
 import { Button } from '@/components/ui/Button';
-import { SettingsFab } from '@/components/ui/AppHeader';
 import type { SubmissionResponse } from '@/types';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:5192';
@@ -190,8 +189,6 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
-
-      <SettingsFab />
     </SafeAreaView>
   );
 }
