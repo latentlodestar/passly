@@ -107,6 +107,7 @@ export const api = createApi({
       }),
       invalidatesTags: (_result, _err, { id }) => [
         { type: "SubmissionSummary", id },
+        { type: "Submissions", id },
       ],
     }),
     getSubmissionSummary: builder.query<
