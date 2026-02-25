@@ -99,12 +99,12 @@
 
 /* Primary */
 .btn--primary {
-  background: var(--primary);
+  background: var(--btn-primary);
   color: var(--primary-fg);
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--primary-hover);
+  background: var(--btn-primary-hover);
 }
 
 /* Secondary */
@@ -1258,8 +1258,8 @@
 
 /* Step states */
 .stepper__step--completed .stepper__indicator {
-  background: var(--primary);
-  border-color: var(--primary);
+  background: var(--btn-primary);
+  border-color: var(--btn-primary);
   color: var(--primary-fg);
 }
 

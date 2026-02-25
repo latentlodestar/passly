@@ -4,79 +4,99 @@
  * Mirrors the web design system (tokens.css) so both platforms
  * share a single visual language. Values are defined in raw numbers
  * for React Native's StyleSheet system.
+ *
+ * WCAG-adapted palette:
+ * - Two-tier blue: primary (#4A9EFF) for text/links, btnPrimary (#0078D4) for filled buttons.
+ * - All text tokens pass 4.5:1 (AA) on their intended backgrounds.
+ * - All interactive UI boundaries meet 3:1 minimum.
  */
 
 export const colors = {
   dark: {
-    bg: '#0c0f16',
-    surface: '#141822',
-    surface2: '#1c2030',
-    surface3: '#232838',
+    bg: '#232528',
+    surface: '#272A30',
+    surface2: '#2A2E35',
+    surface3: '#2C303B',
 
-    fg: '#e4e7ec',
-    fg2: '#a0a7b5',
-    muted: '#6b7280',
+    fg: '#FFFFFF',
+    fg2: '#8F9BB0',
+    muted: '#6B7585',
 
-    border: '#232838',
-    borderStrong: '#343b4e',
+    border: '#3D4555',
+    borderStrong: '#627080',
 
-    primary: '#4a8af4',
-    primaryFg: '#ffffff',
-    primaryHover: '#3b7ae5',
-    primaryMuted: 'rgba(74, 138, 244, 0.14)',
+    primary: '#4A9EFF',
+    primaryFg: '#FFFFFF',
+    primaryHover: '#3B8EEF',
+    primaryMuted: 'rgba(74, 158, 255, 0.14)',
 
-    danger: '#e5534b',
-    dangerFg: '#ffffff',
+    btnPrimary: '#0078D4',
+    btnPrimaryHover: '#006BBD',
+
+    accent: '#13A5E3',
+
+    danger: '#C4342E',
+    dangerFg: '#FFFFFF',
     dangerSubtle: 'rgba(229, 83, 75, 0.12)',
-    dangerText: '#f08882',
+    dangerText: '#F08882',
 
-    success: '#3fb950',
-    successFg: '#ffffff',
+    success: '#1A7F37',
+    successFg: '#FFFFFF',
     successSubtle: 'rgba(63, 185, 80, 0.12)',
-    successText: '#7ee787',
+    successText: '#7EE787',
 
-    warning: '#d29922',
-    warningFg: '#ffffff',
+    warning: '#9A6700',
+    warningFg: '#FFFFFF',
     warningSubtle: 'rgba(210, 153, 34, 0.12)',
-    warningText: '#e3b341',
+    warningText: '#E3B341',
   },
   light: {
-    bg: '#f5f6f8',
-    surface: '#ffffff',
-    surface2: '#f0f1f4',
-    surface3: '#e8eaef',
+    bg: '#F5F7FA',
+    surface: '#FFFFFF',
+    surface2: '#EFF1F5',
+    surface3: '#E5E8EE',
 
-    fg: '#111827',
-    fg2: '#4b5563',
-    muted: '#9ca3af',
+    fg: '#1A1D21',
+    fg2: '#4B5563',
+    muted: '#9CA3AF',
 
-    border: '#e2e5ea',
-    borderStrong: '#d1d5db',
+    border: '#D8DDE5',
+    borderStrong: '#7B8799',
 
-    primary: '#2556c4',
-    primaryFg: '#ffffff',
-    primaryHover: '#1d4aa8',
-    primaryMuted: 'rgba(37, 86, 196, 0.08)',
+    primary: '#0065B3',
+    primaryFg: '#FFFFFF',
+    primaryHover: '#004E8C',
+    primaryMuted: 'rgba(0, 101, 179, 0.08)',
 
-    danger: '#c4342e',
-    dangerFg: '#ffffff',
-    dangerSubtle: '#fef2f2',
-    dangerText: '#991b1b',
+    btnPrimary: '#0065B3',
+    btnPrimaryHover: '#004E8C',
 
-    success: '#1a7f37',
-    successFg: '#ffffff',
-    successSubtle: '#ecfdf5',
+    accent: '#0E7FAD',
+
+    danger: '#B42318',
+    dangerFg: '#FFFFFF',
+    dangerSubtle: '#FEF2F2',
+    dangerText: '#991B1B',
+
+    success: '#166534',
+    successFg: '#FFFFFF',
+    successSubtle: '#ECFDF5',
     successText: '#166534',
 
-    warning: '#9a6700',
-    warningFg: '#ffffff',
-    warningSubtle: '#fffbeb',
-    warningText: '#92400e',
+    warning: '#854D0E',
+    warningFg: '#FFFFFF',
+    warningSubtle: '#FFFBEB',
+    warningText: '#92400E',
   },
 } as const;
 
 export type ColorScheme = keyof typeof colors;
 export type ColorToken = keyof (typeof colors)['dark'];
+
+export const fontFamily = {
+  display: 'LeagueSpartan',
+  body: 'System',
+} as const;
 
 export const spacing = {
   xs: 4,

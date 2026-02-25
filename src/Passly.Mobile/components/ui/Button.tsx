@@ -30,7 +30,7 @@ export function Button({
   const t = colors[scheme];
 
   const bgMap: Record<ButtonVariant, string> = {
-    primary: t.primary,
+    primary: t.btnPrimary,
     secondary: t.surface2,
     ghost: 'transparent',
     danger: t.danger,

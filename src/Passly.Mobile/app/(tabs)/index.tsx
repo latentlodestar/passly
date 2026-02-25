@@ -59,7 +59,7 @@ function PetitionRow({ sub, isLast, onResume, onDelete }: PetitionRowProps) {
       {sub.hasPdf && (
         <Pressable
           onPress={handleDownloadPdf}
-          style={[styles.swipeAction, { backgroundColor: t.primary }]}
+          style={[styles.swipeAction, { backgroundColor: t.btnPrimary }]}
         >
           <MaterialIcons name="picture-as-pdf" size={20} color="#fff" />
           <Text style={styles.swipeActionLabel}>PDF</Text>

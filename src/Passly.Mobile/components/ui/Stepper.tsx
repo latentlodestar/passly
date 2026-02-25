@@ -32,7 +32,7 @@ export function Stepper({ steps, currentStep, maxReachedStep, onStepPress }: Ste
             styles.indicator,
             {
               backgroundColor: isCompleted
-                ? t.primary
+                ? t.btnPrimary
                 : isCurrent
                   ? t.primaryMuted
                   : t.surface,

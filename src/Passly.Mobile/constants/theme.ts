@@ -6,7 +6,7 @@
 import { Platform } from 'react-native';
 import { colors } from './design-tokens';
 
-export { colors, spacing, radius, fontSize, fontWeight, shadow } from './design-tokens';
+export { colors, fontFamily, spacing, radius, fontSize, fontWeight, shadow } from './design-tokens';
 export type { ColorScheme, ColorToken } from './design-tokens';
 
 /** Backward-compatible color map used by ThemedView/ThemedText/tab layout */
@@ -32,18 +32,21 @@ export const Colors = {
 export const Fonts = Platform.select({
   ios: {
     sans: 'system-ui',
+    display: 'LeagueSpartan-Bold',
     serif: 'ui-serif',
     rounded: 'ui-rounded',
     mono: 'ui-monospace',
   },
   default: {
     sans: 'normal',
+    display: 'LeagueSpartan-Bold',
     serif: 'serif',
     rounded: 'normal',
     mono: 'monospace',
   },
   web: {
     sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    display: "'League Spartan', sans-serif",
     serif: "Georgia, 'Times New Roman', serif",
     rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
     mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
