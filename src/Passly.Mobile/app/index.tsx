@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -108,6 +108,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const activeId = useAppSelector((s) => s.activeSubmission.id);
+  const [fabOpen, setFabOpen] = useState(false);
 
   const [createSubmission, { isLoading: isCreating }] =
     useCreateSubmissionMutation();
@@ -189,6 +190,38 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
+
+      {fabOpen && (
+        <Pressable style={styles.fabOverlay} onPress={() => setFabOpen(false)}>
+          <View style={styles.fabMenu}>
+            <Pressable
+              onPress={() => { setFabOpen(false); router.push('/tutorial'); }}
+              style={[styles.fabMenuItem, { backgroundColor: t.surface, borderColor: t.border }]}
+            >
+              <MaterialIcons name="school" size={20} color={t.primary} />
+              <Text style={[styles.fabMenuLabel, { color: t.fg }]}>Tutorial</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => { setFabOpen(false); router.push('/settings'); }}
+              style={[styles.fabMenuItem, { backgroundColor: t.surface, borderColor: t.border }]}
+            >
+              <MaterialIcons name="settings" size={20} color={t.primary} />
+              <Text style={[styles.fabMenuLabel, { color: t.fg }]}>Settings</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      )}
+
+      <Pressable
+        onPress={() => setFabOpen((o) => !o)}
+        style={[styles.fab, { backgroundColor: t.btnPrimary }]}
+      >
+        <MaterialIcons
+          name={fabOpen ? 'close' : 'more-vert'}
+          size={24}
+          color={t.primaryFg}
+        />
+      </Pressable>
     </SafeAreaView>
   );
 }
@@ -266,6 +299,51 @@ const styles = StyleSheet.create({
   },
   swipeActionLabel: {
     fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: spacing.xl,
+    right: spacing.xl,
+    width: 56,
+    height: 56,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  fabOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
+  },
+  fabMenu: {
+    position: 'absolute',
+    bottom: 56 + spacing.xl + spacing.md,
+    right: spacing.xl,
+    gap: spacing.sm,
+  },
+  fabMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: borderWidth.accent,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+  },
+  fabMenuLabel: {
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
   },
 });

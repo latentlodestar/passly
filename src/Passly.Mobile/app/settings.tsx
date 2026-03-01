@@ -48,8 +48,15 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]}>
+      <View style={styles.topBar}>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <MaterialIcons name="arrow-back" size={24} color={t.fg} />
+        </Pressable>
+        <Text style={[styles.topBarTitle, { color: t.fg }]}>Settings</Text>
+        <View style={{ width: 24 }} />
+      </View>
+
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.title, { color: t.fg }]}>Settings</Text>
 
         {userEmail && (
           <Card>
@@ -152,14 +159,20 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
   },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+  },
+  topBarTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+  },
   scroll: {
     padding: spacing.xl,
-    paddingTop: spacing['2xl'],
     gap: spacing.lg,
-  },
-  title: {
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.bold,
   },
   emailText: {
     fontSize: fontSize.sm,

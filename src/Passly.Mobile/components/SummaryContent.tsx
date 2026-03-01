@@ -85,8 +85,8 @@ const gapStyles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.lg,
+    borderWidth: borderWidth.accent,
   },
   dates: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   date: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
@@ -142,7 +142,7 @@ function TimeWindowSection({ windowLabel, messages, t }: {
   const hasMore = messages.length > 2;
 
   return (
-    <View style={[twStyles.section, { backgroundColor: t.surface, borderColor: t.border }]}>
+    <View style={[twStyles.section, { backgroundColor: t.surface, borderColor: t.borderAccent }]}>
       <Pressable onPress={() => setExpanded((v) => !v)} style={twStyles.header}>
         <View style={twStyles.headerLeft}>
           <MaterialIcons

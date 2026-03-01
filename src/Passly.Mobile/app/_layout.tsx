@@ -88,7 +88,9 @@ function RootNavigator() {
           <Stack.Screen name="signup" />
           <Stack.Screen name="confirm" />
           <Stack.Screen name="forgot-password" />
-          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="index" />
+          <Stack.Screen name="settings" />
+          <Stack.Screen name="tutorial" />
           <Stack.Screen name="evidence" />
           <Stack.Screen name="import-detail" />
           <Stack.Screen name="checklist" />
