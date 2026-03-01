@@ -4,11 +4,12 @@ import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { ShareIntentProvider } from 'expo-share-intent';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import { colors } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { store, persistor, useAppDispatch, useAppSelector } from '@/store';
 import { checkSession } from '@/store/auth-slice';
@@ -63,8 +64,24 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 function RootNavigator() {
   const colorScheme = useColorScheme();
 
+  const navTheme = useMemo(() => {
+    const base = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+    const t = colors[colorScheme ?? 'light'];
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        background: t.bg,
+        card: t.surface,
+        text: t.fg,
+        border: t.border,
+        primary: t.primary,
+      },
+    };
+  }, [colorScheme]);
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={navTheme}>
       <AuthGate>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="signin" />

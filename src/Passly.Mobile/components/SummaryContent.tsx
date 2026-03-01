@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
+import { colors, spacing, fontSize, fontWeight, radius, borderWidth } from '@/constants/design-tokens';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import type { SummaryContentResponse, SummaryMessageResponse } from '@/types';
 
@@ -174,7 +174,7 @@ function TimeWindowSection({ windowLabel, messages, t }: {
 }
 
 const twStyles = StyleSheet.create({
-  section: { borderWidth: 1, borderRadius: radius.lg, overflow: 'hidden' },
+  section: { borderWidth: borderWidth.accent, borderRadius: radius.lg, overflow: 'hidden' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -1,39 +1,65 @@
+import { StyleSheet } from 'react-native';
+
 /**
  * Passly Design Tokens — Mobile
  *
- * Mirrors the web design system (tokens.css) so both platforms
- * share a single visual language. Values are defined in raw numbers
- * for React Native's StyleSheet system.
+ * Semantic token system powering both dark and light themes.
+ * Values are defined in raw numbers for React Native's StyleSheet system.
  *
  * WCAG-adapted palette:
- * - Two-tier blue: primary (#4A9EFF) for text/links, btnPrimary (#0078D4) for filled buttons.
+ * - Accent cyan (#13A5E3) as primary brand color.
+ * - Dark (#0A0A0A) on-cyan text for 7:1+ contrast on filled buttons.
  * - All text tokens pass 4.5:1 (AA) on their intended backgrounds.
  * - All interactive UI boundaries meet 3:1 minimum.
+ *
+ * Semantic mapping:
+ *   bg            → color.bg.app
+ *   surface       → color.bg.surface
+ *   surface2      → color.bg.surfaceAlt
+ *   fg            → color.text.primary
+ *   fg2           → color.text.secondary
+ *   border        → color.border.default
+ *   borderAccent  → color.border.accent
+ *   primary       → color.accent.primary
+ *   primaryFg     → color.accent.onPrimary
+ *   btnPrimary    → color.button.primaryBg
+ *   btnSecondary  → color.button.secondaryBg
+ *   btnSecondaryFg→ color.button.secondaryFg
+ *   outlineFg     → color.button.outlineFg
+ *   outlineBorder → color.button.outlineBorder
  */
 
 export const colors = {
   dark: {
-    bg: '#232528',
-    surface: '#272A30',
-    surface2: '#2A2E35',
-    surface3: '#2C303B',
+    bg: '#0A0A0A',
+    surface: '#232528',
+    surface2: '#2E3136',
+    surface3: '#363A42',
 
     fg: '#FFFFFF',
-    fg2: '#8F9BB0',
-    muted: '#6B7585',
+    fg2: '#8B96A8',
+    muted: '#626D7D',
 
-    border: '#3D4555',
+    border: '#3A3F47',
     borderStrong: '#627080',
+    borderAccent: '#13A5E3',
 
-    primary: '#4A9EFF',
-    primaryFg: '#FFFFFF',
-    primaryHover: '#3B8EEF',
-    primaryMuted: 'rgba(74, 158, 255, 0.14)',
+    primary: '#13A5E3',
+    primaryFg: '#0A0A0A',
+    primaryHover: '#0F8EC5',
+    primaryMuted: 'rgba(19, 165, 227, 0.14)',
 
-    btnPrimary: '#0078D4',
-    btnPrimaryHover: '#006BBD',
+    btnPrimary: '#13A5E3',
+    btnPrimaryHover: '#0F8EC5',
+
+    btnSecondary: '#182D5E',
+    btnSecondaryFg: '#FFFFFF',
+
+    outlineBorder: '#13A5E3',
+    outlineFg: '#13A5E3',
 
     accent: '#13A5E3',
+    navy: '#182D5E',
 
     danger: '#C4342E',
     dangerFg: '#FFFFFF',
@@ -51,27 +77,36 @@ export const colors = {
     warningText: '#E3B341',
   },
   light: {
-    bg: '#F5F7FA',
-    surface: '#FFFFFF',
+    bg: '#FFFFFF',
+    surface: '#F5F7FA',
     surface2: '#EFF1F5',
     surface3: '#E5E8EE',
 
-    fg: '#1A1D21',
+    fg: '#0A0A0A',
     fg2: '#4B5563',
     muted: '#9CA3AF',
 
     border: '#D8DDE5',
     borderStrong: '#7B8799',
+    borderAccent: '#13A5E3',
 
-    primary: '#0065B3',
-    primaryFg: '#FFFFFF',
-    primaryHover: '#004E8C',
-    primaryMuted: 'rgba(0, 101, 179, 0.08)',
+    // Darker cyan for text legibility on white (5.5:1 AA)
+    primary: '#0B6E99',
+    primaryFg: '#0A0A0A',
+    primaryHover: '#0A6082',
+    primaryMuted: 'rgba(19, 165, 227, 0.08)',
 
-    btnPrimary: '#0065B3',
-    btnPrimaryHover: '#004E8C',
+    btnPrimary: '#13A5E3',
+    btnPrimaryHover: '#0F8EC5',
 
-    accent: '#0E7FAD',
+    btnSecondary: '#182D5E',
+    btnSecondaryFg: '#FFFFFF',
+
+    outlineBorder: '#0B6E99',
+    outlineFg: '#0B6E99',
+
+    accent: '#13A5E3',
+    navy: '#182D5E',
 
     danger: '#B42318',
     dangerFg: '#FFFFFF',
@@ -117,6 +152,10 @@ export const radius = {
   lg: 8,
   xl: 12,
   full: 9999,
+  // Semantic aliases
+  card: 12,
+  button: 6,
+  pill: 9999,
 } as const;
 
 export const fontSize = {
@@ -158,4 +197,18 @@ export const shadow = {
     shadowRadius: 24,
     elevation: 6,
   },
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    elevation: 1,
+  },
 } as const;
+
+/** Consistent border widths — `accent` is halfway between hairline and 1pt */
+export const borderWidth = {
+  hairline: StyleSheet.hairlineWidth,
+  accent: (StyleSheet.hairlineWidth + 1) / 2,
+  default: 1,
+};

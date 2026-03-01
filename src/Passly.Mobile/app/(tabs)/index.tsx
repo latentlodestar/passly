@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
+import { colors, spacing, fontSize, fontWeight, radius, borderWidth } from '@/constants/design-tokens';
 import { stepToRoute } from '@/constants/steps';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { usePassphrase } from '@/hooks/use-passphrase';
@@ -61,16 +61,16 @@ function PetitionRow({ sub, isLast, onResume, onDelete }: PetitionRowProps) {
           onPress={handleDownloadPdf}
           style={[styles.swipeAction, { backgroundColor: t.btnPrimary }]}
         >
-          <MaterialIcons name="picture-as-pdf" size={20} color="#fff" />
-          <Text style={styles.swipeActionLabel}>PDF</Text>
+          <MaterialIcons name="picture-as-pdf" size={20} color={t.primaryFg} />
+          <Text style={[styles.swipeActionLabel, { color: t.primaryFg }]}>PDF</Text>
         </Pressable>
       )}
       <Pressable
         onPress={handleDelete}
         style={[styles.swipeAction, { backgroundColor: t.danger }]}
       >
-        <MaterialIcons name="delete-outline" size={20} color="#fff" />
-        <Text style={styles.swipeActionLabel}>Delete</Text>
+        <MaterialIcons name="delete-outline" size={20} color={t.dangerFg} />
+        <Text style={[styles.swipeActionLabel, { color: t.dangerFg }]}>Delete</Text>
       </Pressable>
     </View>
   );
@@ -175,7 +175,7 @@ export default function HomeScreen() {
         {submissions.length > 0 && (
           <View style={styles.petitionsSection}>
             <Text style={[styles.sectionTitle, { color: t.muted }]}>YOUR PETITIONS</Text>
-            <View style={[styles.petitionList, { borderColor: t.border, backgroundColor: t.surface }]}>
+            <View style={[styles.petitionList, { borderColor: t.borderAccent, backgroundColor: t.surface }]}>
               {submissions.map((sub, index) => (
                 <PetitionRow
                   key={sub.id}
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   petitionList: {
     borderRadius: radius.xl,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: borderWidth.accent,
     overflow: 'hidden',
   },
   petitionRow: {
@@ -267,6 +267,5 @@ const styles = StyleSheet.create({
   swipeActionLabel: {
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
-    color: '#fff',
   },
 });

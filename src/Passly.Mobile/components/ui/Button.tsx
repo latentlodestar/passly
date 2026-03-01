@@ -31,22 +31,22 @@ export function Button({
 
   const bgMap: Record<ButtonVariant, string> = {
     primary: t.btnPrimary,
-    secondary: t.surface2,
+    secondary: t.btnSecondary,
     ghost: 'transparent',
     danger: t.danger,
   };
 
   const fgMap: Record<ButtonVariant, string> = {
     primary: t.primaryFg,
-    secondary: t.fg,
-    ghost: t.fg2,
+    secondary: t.btnSecondaryFg,
+    ghost: t.outlineFg,
     danger: t.dangerFg,
   };
 
   const borderMap: Record<ButtonVariant, string> = {
     primary: 'transparent',
-    secondary: t.border,
-    ghost: 'transparent',
+    secondary: 'transparent',
+    ghost: t.outlineBorder,
     danger: 'transparent',
   };
 
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.button,
     borderWidth: 1,
     gap: spacing.sm,
   },

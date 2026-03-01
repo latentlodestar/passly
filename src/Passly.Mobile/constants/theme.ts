@@ -6,7 +6,7 @@
 import { Platform } from 'react-native';
 import { colors } from './design-tokens';
 
-export { colors, fontFamily, spacing, radius, fontSize, fontWeight, shadow } from './design-tokens';
+export { colors, fontFamily, spacing, radius, fontSize, fontWeight, shadow, borderWidth } from './design-tokens';
 export type { ColorScheme, ColorToken } from './design-tokens';
 
 /** Backward-compatible color map used by ThemedView/ThemedText/tab layout */

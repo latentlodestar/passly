@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
+import { colors, spacing, fontSize, fontWeight, radius, borderWidth } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setAppearance, type Appearance } from '@/store/theme-slice';
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderWidth: borderWidth.accent,
     gap: spacing.md,
   },
   optionLabel: {

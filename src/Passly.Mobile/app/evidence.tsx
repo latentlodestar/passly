@@ -605,7 +605,7 @@ export default function EvidenceScreen() {
           <View style={styles.bottomRow}>
             <Button
               label="Add evidence"
-              variant="secondary"
+              variant="ghost"
               onPress={handleFabPress}
               style={styles.bottomRowBtn}
             />
@@ -618,7 +618,7 @@ export default function EvidenceScreen() {
           </View>
           <Button
             label="Save and exit"
-            variant="ghost"
+            variant="secondary"
             onPress={() => router.replace('/')}
           />
         </View>

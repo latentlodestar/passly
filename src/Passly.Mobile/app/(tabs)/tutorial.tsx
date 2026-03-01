@@ -2,7 +2,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
+import { colors, spacing, fontSize, fontWeight, radius, borderWidth } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 type Step = {
@@ -72,7 +72,7 @@ export default function TutorialScreen() {
                   <View style={[styles.connector, { backgroundColor: t.border }]} />
                 )}
               </View>
-              <View style={[styles.stepContent, { borderColor: t.border, backgroundColor: t.surface }]}>
+              <View style={[styles.stepContent, { borderColor: t.borderAccent, backgroundColor: t.surface }]}>
                 <Text style={[styles.stepNumber, { color: t.muted }]}>Step {index + 1}</Text>
                 <Text style={[styles.stepTitle, { color: t.fg }]}>{step.title}</Text>
                 <Text style={[styles.stepBody, { color: t.fg2 }]}>{step.body}</Text>
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   stepContent: {
     flex: 1,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: borderWidth.accent,
     borderRadius: radius.lg,
     padding: spacing.base,
     marginBottom: spacing.base,
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.base,
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: borderWidth.accent,
     alignItems: 'flex-start',
   },
   noteText: {

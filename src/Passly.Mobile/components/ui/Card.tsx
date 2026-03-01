@@ -1,5 +1,5 @@
 import { StyleSheet, View, Text, type ViewProps } from 'react-native';
-import { colors, spacing, radius, fontSize, fontWeight, shadow } from '@/constants/design-tokens';
+import { colors, spacing, radius, fontSize, fontWeight, shadow, borderWidth } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { ReactNode } from 'react';
 
@@ -27,8 +27,8 @@ export function Card({ status, style, children, ...props }: CardProps) {
         shadow.sm,
         {
           backgroundColor: t.surface,
-          borderColor: t.border,
-          borderLeftColor: status ? statusColors[status] : t.border,
+          borderColor: t.borderAccent,
+          borderLeftColor: status ? statusColors[status] : t.borderAccent,
           borderLeftWidth: status ? 3 : 1,
         },
         style,
@@ -69,8 +69,8 @@ export function CardBody({ children }: CardBodyProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 1,
-    borderRadius: radius.xl,
+    borderWidth: borderWidth.accent,
+    borderRadius: radius.card,
     overflow: 'hidden',
   },
   header: {

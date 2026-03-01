@@ -201,7 +201,7 @@ export default function ChecklistScreen() {
         )}
         <Button
           label="Save and exit"
-          variant="ghost"
+          variant="secondary"
           onPress={() => router.replace('/')}
         />
       </View>
