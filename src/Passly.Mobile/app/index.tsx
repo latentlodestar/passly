@@ -1,12 +1,12 @@
-import { useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { colors, spacing, fontSize, fontWeight, radius, borderWidth } from '@/constants/design-tokens';
+import { colors, spacing, fontSize, fontWeight, radius, borderWidth, fontFamily } from '@/constants/design-tokens';
 import { stepToRoute } from '@/constants/steps';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { usePassphrase } from '@/hooks/use-passphrase';
@@ -17,6 +17,7 @@ import {
   useCreateSubmissionMutation,
   useGetSubmissionsQuery,
   useDeleteSubmissionMutation,
+  api,
 } from '@/api/api';
 import { Button } from '@/components/ui/Button';
 import type { SubmissionResponse } from '@/types';
@@ -108,25 +109,57 @@ export default function HomeScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const activeId = useAppSelector((s) => s.activeSubmission.id);
-  const [fabOpen, setFabOpen] = useState(false);
 
   const [createSubmission, { isLoading: isCreating }] =
     useCreateSubmissionMutation();
   const [deleteSubmission] = useDeleteSubmissionMutation();
 
-  const { data: submissions = [] } = useGetSubmissionsQuery();
+  const { data: submissions = [], isLoading } = useGetSubmissionsQuery();
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
 
-  const handleCreate = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimeElapsed(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const showLoading = isLoading || !minTimeElapsed;
+  const isNewUser = submissions.length === 0;
+
+  const handleGetStarted = async () => {
     const result = await createSubmission({
       label: `Petition ${new Date().toLocaleDateString()}`,
     }).unwrap();
     dispatch(setActiveSubmission(result.id));
-    router.push('/evidence');
+    router.push('/tutorial');
   };
 
-  const handleResume = (sub: SubmissionResponse) => {
+  const [fetchImports] = api.endpoints.getChatImports.useLazyQuery();
+
+  const handleResume = async (sub: SubmissionResponse) => {
     dispatch(setActiveSubmission(sub.id));
-    router.push(stepToRoute(sub.currentStep) as '/evidence');
+
+    let route = stepToRoute(sub.currentStep);
+
+    // For evidence-related steps, verify imports exist
+    if (route === '/evidence' || route === '/evidence-ready') {
+      const { data: imports = [] } = await fetchImports({ submissionId: sub.id });
+      if (imports.length === 0) {
+        router.push('/tutorial');
+        return;
+      }
+      // evidence-ready needs the chatImportId param
+      if (route === '/evidence-ready') {
+        const parsed = imports.find((i: { status: string }) => i.status === 'Parsed');
+        if (parsed) {
+          router.push({ pathname: '/evidence-ready', params: { chatImportId: parsed.id } });
+        } else {
+          router.push('/evidence');
+        }
+        return;
+      }
+    }
+
+    router.push(route as '/evidence');
   };
 
   const handleDelete = (sub: SubmissionResponse) => {
@@ -149,6 +182,14 @@ export default function HomeScreen() {
     );
   };
 
+  if (showLoading) {
+    return (
+      <SafeAreaView style={[styles.safe, styles.centered, { backgroundColor: t.bg }]}>
+        <ActivityIndicator size="large" color={t.btnPrimary} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]}>
       <ScrollView
@@ -156,24 +197,34 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.hero}>
+          <MaterialIcons name="chat-bubble-outline" size={64} color={t.btnPrimary} />
           <Text style={[styles.heroTitle, { color: t.fg }]}>
-            Prepare your immigration petition with confidence
+            Let's Turn Your Memories{'\n'}Into Evidence
           </Text>
-          <Text style={[styles.heroSubtitle, { color: t.fg2 }]}>
-            Passly helps you structure your petition, analyze supporting
-            evidence, and identify documentation gaps.
-          </Text>
+          {isNewUser && (
+            <>
+              <Text style={[styles.heroSubtitle, { color: t.fg2 }]}>
+                We'll walk you through how to share your WhatsApp chat directly
+                with the app so it will automatically appear here.
+              </Text>
+              <Text style={[styles.heroSubtitle, { color: t.fg2 }]}>
+                Passly will handle the rest and create a sampled history of your
+                relationship chat that's ready for you to submit with your Visa
+                case as a PDF USCIS-ready filing.
+              </Text>
+            </>
+          )}
           <View style={styles.actions}>
             <Button
-              label={isCreating ? 'Creating...' : 'Create petition'}
+              label={isCreating ? 'Creating...' : isNewUser ? 'Get Started' : 'Create petition'}
               size="lg"
-              onPress={handleCreate}
+              onPress={handleGetStarted}
               disabled={isCreating}
             />
           </View>
         </View>
 
-        {submissions.length > 0 && (
+        {!isNewUser && (
           <View style={styles.petitionsSection}>
             <Text style={[styles.sectionTitle, { color: t.muted }]}>YOUR PETITIONS</Text>
             <View style={[styles.petitionList, { borderColor: t.borderAccent, backgroundColor: t.surface }]}>
@@ -191,37 +242,6 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {fabOpen && (
-        <Pressable style={styles.fabOverlay} onPress={() => setFabOpen(false)}>
-          <View style={styles.fabMenu}>
-            <Pressable
-              onPress={() => { setFabOpen(false); router.push('/tutorial'); }}
-              style={[styles.fabMenuItem, { backgroundColor: t.surface, borderColor: t.border }]}
-            >
-              <MaterialIcons name="school" size={20} color={t.primary} />
-              <Text style={[styles.fabMenuLabel, { color: t.fg }]}>Tutorial</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => { setFabOpen(false); router.push('/settings'); }}
-              style={[styles.fabMenuItem, { backgroundColor: t.surface, borderColor: t.border }]}
-            >
-              <MaterialIcons name="settings" size={20} color={t.primary} />
-              <Text style={[styles.fabMenuLabel, { color: t.fg }]}>Settings</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      )}
-
-      <Pressable
-        onPress={() => setFabOpen((o) => !o)}
-        style={[styles.fab, { backgroundColor: t.btnPrimary }]}
-      >
-        <MaterialIcons
-          name={fabOpen ? 'close' : 'more-vert'}
-          size={24}
-          color={t.primaryFg}
-        />
-      </Pressable>
     </SafeAreaView>
   );
 }
@@ -229,6 +249,10 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scroll: {
     padding: spacing.xl,
@@ -240,6 +264,7 @@ const styles = StyleSheet.create({
     gap: spacing.base,
   },
   heroTitle: {
+    fontFamily: fontFamily.display,
     fontSize: fontSize['2xl'],
     fontWeight: fontWeight.bold,
     textAlign: 'center',
@@ -299,51 +324,6 @@ const styles = StyleSheet.create({
   },
   swipeActionLabel: {
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: spacing.xl,
-    right: spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  fabOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-  },
-  fabMenu: {
-    position: 'absolute',
-    bottom: 56 + spacing.xl + spacing.md,
-    right: spacing.xl,
-    gap: spacing.sm,
-  },
-  fabMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: borderWidth.accent,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-  },
-  fabMenuLabel: {
-    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
   },
 });

@@ -19,7 +19,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAppSelector } from '@/store';
+import { useAppSelector, useAppDispatch } from '@/store';
+import { reportStep } from '@/store/progress-slice';
 import { usePassphrase } from '@/hooks/use-passphrase';
 import { useStepSync } from '@/hooks/use-step-sync';
 import { useGetChatImportsQuery, useUploadChatExportMutation } from '@/api/api';
@@ -313,9 +314,9 @@ export default function EvidenceScreen() {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-
   useStepSync('ImportEvidence');
+  const dispatch = useAppDispatch();
+  useEffect(() => { dispatch(reportStep(0)); }, [dispatch]);
 
   const activeSubmissionId = useAppSelector((s) => s.activeSubmission.id);
   const { passphrase, isLoaded: passphraseLoaded } = usePassphrase();
@@ -537,11 +538,11 @@ export default function EvidenceScreen() {
   /* ---- Render ---- */
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top', 'left', 'right']}>
-      <WorkflowHeader title="Import evidence" />
+    <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top', 'bottom', 'left', 'right']}>
+      <WorkflowHeader title="Import evidence" step={0} />
       <View ref={containerRef as React.Ref<View>} style={styles.container}>
         <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingBottom: 80 + insets.bottom }]}
+          contentContainerStyle={[styles.scroll, { paddingBottom: 80 }]}
           showsVerticalScrollIndicator={false}
         >
           {noPassphrase && (
@@ -598,7 +599,7 @@ export default function EvidenceScreen() {
             {
               backgroundColor: t.bg,
               borderTopColor: t.border,
-              paddingBottom: insets.bottom + spacing.base,
+              paddingBottom: spacing.lg,
             },
           ]}
         >
@@ -731,6 +732,7 @@ const styles = StyleSheet.create({
   bottomRow: {
     flexDirection: 'row',
     gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   bottomRowBtn: {
     flex: 1,

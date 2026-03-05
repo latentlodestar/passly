@@ -161,24 +161,24 @@ function MetadataHeader({
   });
 
   return (
-    <View style={[headerStyles.container, { backgroundColor: t.bg, borderBottomColor: t.border }]}>
+    <View style={[headerStyles.container, { backgroundColor: '#000000', borderBottomColor: t.border }]}>
       <View style={headerStyles.topRow}>
         <Pressable onPress={onBack} hitSlop={12} style={headerStyles.backBtn}>
-          <MaterialIcons name="arrow-back" size={22} color={t.fg} />
+          <MaterialIcons name="close" size={22} color="#FFFFFF" />
         </Pressable>
         <View style={headerStyles.titleWrap}>
-          <Text style={[headerStyles.fileName, { color: t.fg }]} numberOfLines={1}>
+          <Text style={[headerStyles.fileName, { color: '#FFFFFF' }]} numberOfLines={1}>
             {fileName}
           </Text>
         </View>
       </View>
       <View style={headerStyles.metaRow}>
         <Badge variant={badgeVariant}>{badgeLabel}</Badge>
-        <Text style={[headerStyles.metaText, { color: t.muted }]}>
+        <Text style={[headerStyles.metaText, { color: '#CCCCCC' }]}>
           {totalMessages.toLocaleString()} messages
         </Text>
-        <Text style={[headerStyles.metaDot, { color: t.muted }]}>&middot;</Text>
-        <Text style={[headerStyles.metaText, { color: t.muted }]}>
+        <Text style={[headerStyles.metaDot, { color: '#CCCCCC' }]}>&middot;</Text>
+        <Text style={[headerStyles.metaText, { color: '#CCCCCC' }]}>
           {importDate}
         </Text>
       </View>

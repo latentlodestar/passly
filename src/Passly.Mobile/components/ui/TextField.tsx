@@ -1,5 +1,5 @@
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
-import { colors, spacing, radius, fontSize, fontWeight } from '@/constants/design-tokens';
+import { colors, spacing, radius, fontSize, fontWeight, fontFamily } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 interface TextFieldProps extends TextInputProps {
@@ -25,7 +25,7 @@ export function TextField({ label, helper, error, style, ...props }: TextFieldPr
           {
             backgroundColor: t.surface,
             color: t.fg,
-            borderColor: hasError ? t.danger : t.border,
+            borderColor: hasError ? t.danger : t.fg,
           },
           style,
         ]}
@@ -50,10 +50,12 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   label: {
+    fontFamily: fontFamily.display,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
   },
   input: {
+    fontFamily: fontFamily.display,
     height: 44,
     paddingHorizontal: spacing.md,
     borderWidth: 1,
@@ -61,6 +63,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
   },
   helper: {
+    fontFamily: fontFamily.display,
     fontSize: fontSize.xs,
   },
 });

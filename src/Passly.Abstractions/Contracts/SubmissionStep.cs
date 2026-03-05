@@ -4,5 +4,8 @@ public enum SubmissionStep
 {
     GetStarted,
     ImportEvidence,
-    ReviewComplete
+    AnalyzingChats,
+    EvidenceReady,
+    ReviewComplete,
+    AttestCheckout
 }

@@ -5,7 +5,7 @@ import {
   type PressableProps,
   type ViewStyle,
 } from 'react-native';
-import { colors, spacing, radius, fontSize, fontWeight } from '@/constants/design-tokens';
+import { colors, spacing, radius, fontSize, fontWeight, fontFamily } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -109,6 +109,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   label: {
+    fontFamily: fontFamily.display,
     fontWeight: fontWeight.semibold,
   },
 });

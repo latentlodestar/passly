@@ -1,35 +1,23 @@
 import { StyleSheet, View, Text, type ViewProps } from 'react-native';
-import { colors, spacing, radius, fontSize, fontWeight, shadow, borderWidth } from '@/constants/design-tokens';
+import { colors, spacing, radius, fontSize, fontWeight, fontFamily } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import type { ReactNode } from 'react';
 
-type CardStatus = 'ok' | 'error' | 'warning';
-
 interface CardProps extends ViewProps {
-  status?: CardStatus;
   children: ReactNode;
 }
 
-export function Card({ status, style, children, ...props }: CardProps) {
+export function Card({ style, children, ...props }: CardProps) {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
-
-  const statusColors: Record<CardStatus, string> = {
-    ok: t.success,
-    error: t.danger,
-    warning: t.warning,
-  };
 
   return (
     <View
       style={[
         styles.card,
-        shadow.sm,
         {
           backgroundColor: t.surface,
           borderColor: t.borderAccent,
-          borderLeftColor: status ? statusColors[status] : t.borderAccent,
-          borderLeftWidth: status ? 3 : 1,
         },
         style,
       ]}
@@ -51,7 +39,7 @@ export function CardHeader({ children }: CardHeaderProps) {
   return (
     <View style={[styles.header, { borderBottomColor: t.border }]}>
       {typeof children === 'string' ? (
-        <Text style={[styles.headerText, { color: t.fg2 }]}>{children}</Text>
+        <Text style={[styles.headerText, { color: t.fg }]}>{children}</Text>
       ) : (
         children
       )}
@@ -69,9 +57,8 @@ export function CardBody({ children }: CardBodyProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: borderWidth.accent,
-    borderRadius: radius.card,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderRadius: radius.lg,
   },
   header: {
     flexDirection: 'row',
@@ -79,13 +66,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.md,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerText: {
-    fontSize: fontSize.xs,
+    fontFamily: fontFamily.display,
+    fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   body: {
     padding: spacing.base,

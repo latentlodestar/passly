@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { colors, spacing, fontSize, fontWeight, radius, borderWidth } from '@/constants/design-tokens';
+import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
 import { Card, CardHeader, CardBody } from '@/components/ui/Card';
 import type { SummaryContentResponse, SummaryMessageResponse } from '@/types';
 
@@ -86,7 +86,7 @@ const gapStyles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.lg,
-    borderWidth: borderWidth.accent,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   dates: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   date: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
@@ -142,7 +142,7 @@ function TimeWindowSection({ windowLabel, messages, t }: {
   const hasMore = messages.length > 2;
 
   return (
-    <View style={[twStyles.section, { backgroundColor: t.surface, borderColor: t.borderAccent }]}>
+    <Card>
       <Pressable onPress={() => setExpanded((v) => !v)} style={twStyles.header}>
         <View style={twStyles.headerLeft}>
           <MaterialIcons
@@ -169,12 +169,11 @@ function TimeWindowSection({ windowLabel, messages, t }: {
           </Pressable>
         )}
       </View>
-    </View>
+    </Card>
   );
 }
 
 const twStyles = StyleSheet.create({
-  section: { borderWidth: borderWidth.accent, borderRadius: radius.lg, overflow: 'hidden' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -244,7 +243,7 @@ export function SummaryContentView({
   return (
     <View style={styles.container}>
       {/* Overview card */}
-      <Card status="ok">
+      <Card>
         <CardHeader>Communication Overview</CardHeader>
         <CardBody>
           <StatRow label="Total messages" value={totalMessages.toLocaleString()} t={t} />

@@ -3,9 +3,10 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-import { ShareIntentProvider } from 'expo-share-intent';
+import { ShareIntentProvider, useShareIntent } from 'expo-share-intent';
 import { useEffect, useMemo, useRef } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, View } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -61,8 +62,29 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function ShareIntentRedirect() {
+  const { shareIntent } = useShareIntent();
+  const router = useRouter();
+  const segments = useSegments();
+  const hasRedirected = useRef(false);
+
+  useEffect(() => {
+    if (hasRedirected.current) return;
+    if (!shareIntent?.files?.length) return;
+
+    const currentSegment = segments[0] ?? '';
+    if (currentSegment === 'analyzing') return;
+
+    hasRedirected.current = true;
+    router.push('/analyzing');
+  }, [shareIntent, segments, router]);
+
+  return null;
+}
+
 function RootNavigator() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
 
   const navTheme = useMemo(() => {
     const base = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
@@ -88,14 +110,30 @@ function RootNavigator() {
           <Stack.Screen name="signup" />
           <Stack.Screen name="confirm" />
           <Stack.Screen name="forgot-password" />
-          <Stack.Screen name="index" />
-          <Stack.Screen name="settings" />
+          <Stack.Screen
+            name="index"
+            options={{
+              headerShown: true,
+              title: 'Welcome',
+              headerStyle: { backgroundColor: '#000000' },
+              headerTintColor: '#FFFFFF',
+              headerRight: () => (
+                <Pressable onPress={() => router.push('/settings')} style={{ marginRight: 8 }}>
+                  <MaterialIcons name="settings" size={24} color="#FFFFFF" />
+                </Pressable>
+              ),
+            }}
+          />
+          <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
           <Stack.Screen name="tutorial" />
           <Stack.Screen name="evidence" />
-          <Stack.Screen name="import-detail" />
+          <Stack.Screen name="analyzing" />
+          <Stack.Screen name="evidence-ready" />
+          <Stack.Screen name="import-detail" options={{ presentation: 'modal' }} />
           <Stack.Screen name="checklist" />
         </Stack>
         <Toast />
+        <ShareIntentRedirect />
       </AuthGate>
       <StatusBar style="auto" />
     </ThemeProvider>

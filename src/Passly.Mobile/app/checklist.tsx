@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useRouter } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -8,7 +8,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { colors, spacing, fontSize, fontWeight, radius } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppSelector, useAppDispatch } from '@/store';
-import { showToast } from '@/store/toast-slice';
+import { reportStep } from '@/store/progress-slice';
 import { useStepSync } from '@/hooks/use-step-sync';
 import { usePassphrase } from '@/hooks/use-passphrase';
 import {
@@ -27,11 +27,11 @@ export default function ChecklistScreen() {
   const scheme = useColorScheme() ?? 'light';
   const t = colors[scheme];
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const activeSubmissionId = useAppSelector((s) => s.activeSubmission.id);
 
   useStepSync('ReviewComplete');
+  useEffect(() => { dispatch(reportStep(3)); }, [dispatch]);
 
   const { passphrase, isLoaded: passphraseLoaded } = usePassphrase();
 
@@ -109,10 +109,10 @@ export default function ChecklistScreen() {
   }, [hasTriggered, isLoadingMeta, hasSummary, activeSubmissionId, passphrase, parsedImport, analyzeSubmission, refetchMeta]);
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top', 'left', 'right']}>
-      <WorkflowHeader title="Review" />
+    <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]} edges={['top', 'bottom', 'left', 'right']}>
+      <WorkflowHeader title="Review" step={3} />
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: 100 + insets.bottom }]}
+        contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
         {/* Passphrase warning */}
@@ -180,23 +180,11 @@ export default function ChecklistScreen() {
         )}
       </ScrollView>
 
-      <View
-        style={[
-          styles.bottomBar,
-          {
-            backgroundColor: t.bg,
-            borderTopColor: t.border,
-            paddingBottom: insets.bottom + spacing.base,
-          },
-        ]}
-      >
+      <View style={styles.bottomBar}>
         {hasSummary && (
           <Button
-            label="Done"
-            onPress={() => {
-              dispatch(showToast({ message: 'Analysis complete' }));
-              router.replace('/');
-            }}
+            label="Attest & Checkout"
+            onPress={() => router.push('/attestation')}
           />
         )}
         <Button
@@ -217,14 +205,6 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     paddingTop: spacing['2xl'],
     gap: spacing.lg,
-  },
-  title: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-  },
-  subtitle: {
-    fontSize: fontSize.sm,
-    lineHeight: 20,
   },
   warningRow: {
     flexDirection: 'row',
@@ -268,12 +248,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing['3xl'],
   },
   bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingBottom: spacing.lg,
+    paddingTop: spacing.sm,
+    gap: spacing.sm,
   },
 });

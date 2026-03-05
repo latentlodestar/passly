@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
-import { colors, spacing, fontSize, fontWeight, radius, borderWidth } from '@/constants/design-tokens';
+import { colors, spacing, fontSize, fontWeight, fontFamily, radius, borderWidth } from '@/constants/design-tokens';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setAppearance, type Appearance } from '@/store/theme-slice';
@@ -50,10 +50,10 @@ export default function SettingsScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: t.bg }]}>
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <MaterialIcons name="arrow-back" size={24} color={t.fg} />
+          <MaterialIcons name="close" size={24} color={t.fg} />
         </Pressable>
-        <Text style={[styles.topBarTitle, { color: t.fg }]}>Settings</Text>
-        <View style={{ width: 24 }} />
+        <Text style={[styles.topBarTitle, { color: t.fg }]}>SETTINGS</Text>
+        <View style={{ width: 28 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -62,10 +62,10 @@ export default function SettingsScreen() {
           <Card>
             <CardHeader>Account</CardHeader>
             <CardBody>
-              <Text style={[styles.emailText, { color: t.fg2 }]}>{userEmail}</Text>
+              <Text style={[styles.emailText, { color: t.fg }]}>{userEmail}</Text>
               <Button
                 label="Sign out"
-                variant="secondary"
+                variant="danger"
                 size="sm"
                 onPress={handleSignOut}
               />
@@ -86,14 +86,14 @@ export default function SettingsScreen() {
                     styles.option,
                     {
                       backgroundColor: selected ? t.primaryMuted : 'transparent',
-                      borderColor: selected ? t.primary : t.border,
+                      borderColor: selected ? t.primary : t.fg,
                     },
                   ]}
                 >
                   <MaterialIcons
                     name={option.icon}
                     size={20}
-                    color={selected ? t.primary : t.muted}
+                    color={selected ? t.primary : t.fg}
                   />
                   <Text
                     style={[
@@ -123,7 +123,7 @@ export default function SettingsScreen() {
         <Card>
           <CardHeader>
             <View style={styles.passphraseHeader}>
-              <Text style={[styles.cardHeaderText, { color: t.fg2 }]}>
+              <Text style={[styles.cardHeaderText, { color: t.fg }]}>
                 Encryption passphrase
               </Text>
               {isLoaded && savedPassphrase && (
@@ -132,7 +132,7 @@ export default function SettingsScreen() {
             </View>
           </CardHeader>
           <CardBody>
-            <Text style={[styles.passphraseHint, { color: t.muted }]}>
+            <Text style={[styles.passphraseHint, { color: t.fg }]}>
               Your passphrase encrypts uploaded evidence. Choose something memorable — it cannot be recovered.
             </Text>
             <TextField
@@ -167,14 +167,17 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   topBarTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
+    fontFamily: fontFamily.display,
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.extrabold,
+    letterSpacing: 1,
   },
   scroll: {
     padding: spacing.xl,
     gap: spacing.lg,
   },
   emailText: {
+    fontFamily: fontFamily.display,
     fontSize: fontSize.sm,
     lineHeight: 20,
   },
@@ -187,6 +190,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   optionLabel: {
+    fontFamily: fontFamily.display,
     fontSize: fontSize.base,
     flex: 1,
   },
@@ -199,12 +203,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   cardHeaderText: {
-    fontSize: fontSize.xs,
+    fontFamily: fontFamily.display,
+    fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   passphraseHint: {
+    fontFamily: fontFamily.display,
     fontSize: fontSize.sm,
     lineHeight: 20,
   },
